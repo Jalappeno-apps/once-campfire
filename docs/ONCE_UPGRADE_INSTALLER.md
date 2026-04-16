@@ -9,8 +9,10 @@ It is designed to avoid downtime and protect existing production data:
 2. Back up container metadata and `/rails/storage`.
 3. Create `.env.production` from `.env.production.example`.
 4. Prefill env values from the existing container (`SECRET_KEY_BASE`, SSL, VAPID, etc).
-5. Start a canary deployment on `8080/8443`.
-6. Print explicit cutover and rollback commands.
+5. Fix ownership/permissions of migrated storage for non-root app user.
+6. Validate storage write access before deploy.
+7. Start a canary deployment on `8080/8443` (or skip if ports are occupied).
+8. Print explicit cutover and rollback commands.
 
 ## Run directly on server (curl style)
 
@@ -29,6 +31,7 @@ EXISTING_CONTAINER=campfire
 TARGET_IMAGE=ghcr.io/jalappeno-apps/once-campfire:v0.1.0
 CANARY_HTTP_PORT=8080
 CANARY_HTTPS_PORT=8443
+RUN_CANARY=true
 AUTO_DEPLOY=false
 ```
 
@@ -54,6 +57,7 @@ After canary validation on `http://<server-ip>:8080`:
 
 ```bash
 once stop
+docker rm -f campfire || true
 cd /opt/once-campfire/app
 docker compose -f docker-compose.prod.yml -f docker-compose.bind-storage.yml --env-file .env.production up -d
 ```

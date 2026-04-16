@@ -11,6 +11,9 @@ CANARY_HTTPS_PORT="${CANARY_HTTPS_PORT:-8443}"
 TARGET_IMAGE="${TARGET_IMAGE:-}"
 EDITOR_CMD="${EDITOR:-vi}"
 AUTO_DEPLOY="${AUTO_DEPLOY:-false}"
+RUN_CANARY="${RUN_CANARY:-true}"
+
+IMAGE_SOURCE="remote"
 
 info() { echo "==> $*"; }
 warn() { echo "WARN: $*" >&2; }
@@ -32,6 +35,16 @@ detect_compose() {
   fi
 
   die "Neither 'docker compose' nor 'docker-compose' is available."
+}
+
+run_privileged() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    die "Need root privileges to run: $*"
+  fi
 }
 
 container_exists() {
@@ -94,6 +107,48 @@ seed_storage_from_backup() {
   fi
 }
 
+fix_storage_permissions() {
+  local target_storage_dir="$1"
+
+  info "Ensuring storage permissions for non-root app user (uid/gid 1000)"
+  run_privileged mkdir -p "${target_storage_dir}/db" "${target_storage_dir}/files" "${target_storage_dir}/backups"
+  run_privileged chown -R 1000:1000 "$target_storage_dir"
+  run_privileged find "$target_storage_dir" -type d -exec chmod 775 {} \;
+  run_privileged find "$target_storage_dir" -type f -exec chmod 664 {} \;
+}
+
+ensure_storage_writable() {
+  local target_storage_dir="$1"
+  local probe="${target_storage_dir}/db/.write-check.$$"
+
+  if run_privileged sh -c "touch \"$probe\" && rm -f \"$probe\""; then
+    info "Storage write check passed (${target_storage_dir}/db)"
+    return
+  fi
+
+  die "Storage path ${target_storage_dir}/db is not writable; aborting before deploy."
+}
+
+port_in_use() {
+  local port="$1"
+  docker ps --format '{{.Ports}}' | grep -Eq "(^|, )0\\.0\\.0\\.0:${port}->|(^|, )\\[::\\]:${port}->|(^|, ):::${port}->"
+}
+
+remove_stale_canary_container() {
+  if container_exists "campfire-canary"; then
+    info "Removing existing campfire-canary container to avoid name conflicts"
+    docker rm -f campfire-canary >/dev/null 2>&1 || true
+  fi
+}
+
+remove_existing_named_container() {
+  local name="$1"
+  if container_exists "$name"; then
+    info "Removing existing container '${name}' to free reserved name"
+    docker rm -f "$name" >/dev/null 2>&1 || true
+  fi
+}
+
 prepare_image() {
   local env_file="$1"
   local app_dir="$2"
@@ -108,11 +163,13 @@ prepare_image() {
     info "CAMPFIRE_IMAGE not set; building local image ${local_image}"
     docker build -t "$local_image" "$app_dir"
     upsert_env "$env_file" "CAMPFIRE_IMAGE" "$local_image"
+    IMAGE_SOURCE="local"
     return
   fi
 
   if docker image inspect "$image" >/dev/null 2>&1; then
     info "Using existing local image ${image}"
+    IMAGE_SOURCE="local"
     return
   fi
 
@@ -122,6 +179,9 @@ prepare_image() {
     warn "Failed to pull ${image}; building local fallback image ${local_image}"
     docker build -t "$local_image" "$app_dir"
     upsert_env "$env_file" "CAMPFIRE_IMAGE" "$local_image"
+    IMAGE_SOURCE="local"
+  else
+    IMAGE_SOURCE="remote"
   fi
 }
 
@@ -132,6 +192,7 @@ main() {
 
   local timestamp backup_root existing_env_file env_file compose_canary compose_bind
   local backup_storage_dir missing=0
+  local -a compose_up_flags=(-d)
 
   timestamp="$(date +%Y%m%d-%H%M%S)"
   backup_root="${INSTALL_DIR}/backups/${timestamp}"
@@ -199,6 +260,8 @@ main() {
   # Use host bind mount so migrated data is explicit and easy to back up.
   mkdir -p "${INSTALL_DIR}/storage"
   seed_storage_from_backup "$backup_storage_dir" "${INSTALL_DIR}/storage"
+  fix_storage_permissions "${INSTALL_DIR}/storage"
+  ensure_storage_writable "${INSTALL_DIR}/storage"
 
   compose_bind="${APP_DIR}/docker-compose.bind-storage.yml"
   cat > "$compose_bind" <<EOF
@@ -211,8 +274,14 @@ EOF
   compose_canary="${APP_DIR}/docker-compose.canary.yml"
   cat > "$compose_canary" <<EOF
 services:
-  campfire:
+  campfire-canary:
+    image: \${CAMPFIRE_IMAGE}
     container_name: campfire-canary
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - ${INSTALL_DIR}/storage:/rails/storage
     ports:
       - "${CANARY_HTTP_PORT}:80"
       - "${CANARY_HTTPS_PORT}:443"
@@ -241,24 +310,40 @@ EOF
 
   prepare_image "$env_file" "$APP_DIR" "$timestamp"
 
-  info "Starting canary deployment on ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT}"
-  (
-    cd "$APP_DIR"
-    "${COMPOSE_CMD[@]}" \
-      -f docker-compose.prod.yml \
-      -f docker-compose.bind-storage.yml \
-      -f docker-compose.canary.yml \
-      --env-file .env.production \
-      up -d
-  )
+  if [ "$IMAGE_SOURCE" = "local" ]; then
+    compose_up_flags+=(--pull never)
+  fi
+
+  remove_stale_canary_container
+  if [ "$RUN_CANARY" = "true" ] && { port_in_use "$CANARY_HTTP_PORT" || port_in_use "$CANARY_HTTPS_PORT"; }; then
+    warn "Canary ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT} are already in use. Skipping canary deploy."
+    RUN_CANARY="false"
+  fi
+
+  if [ "$RUN_CANARY" = "true" ]; then
+    info "Starting canary deployment on ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT}"
+    (
+      cd "$APP_DIR"
+      "${COMPOSE_CMD[@]}" \
+        -f docker-compose.canary.yml \
+        --env-file .env.production \
+        up "${compose_up_flags[@]}"
+    )
+  else
+    info "Canary deployment skipped."
+  fi
 
   echo
-  info "Canary is up. Validate app on:"
-  echo "  http://<server-ip>:${CANARY_HTTP_PORT}"
+  if [ "$RUN_CANARY" = "true" ]; then
+    info "Canary is up. Validate app on:"
+    echo "  http://<server-ip>:${CANARY_HTTP_PORT}"
+    echo
+  fi
   echo
   info "When ready to cut over from once-managed app:"
   cat <<'EOF'
   once stop
+  docker rm -f campfire || true
   cd /opt/once-campfire/app
   docker compose \
     -f docker-compose.prod.yml \
@@ -281,13 +366,14 @@ EOF
   if [ "$AUTO_DEPLOY" = "true" ]; then
     if confirm "AUTO_DEPLOY=true set. Cut over now (stop once, start new stack on 80/443)?"; then
       once stop || true
+      remove_existing_named_container "$EXISTING_CONTAINER"
       (
         cd "$APP_DIR"
         "${COMPOSE_CMD[@]}" \
           -f docker-compose.prod.yml \
           -f docker-compose.bind-storage.yml \
           --env-file .env.production \
-          up -d
+          up "${compose_up_flags[@]}"
       )
       info "Cutover complete."
     else
