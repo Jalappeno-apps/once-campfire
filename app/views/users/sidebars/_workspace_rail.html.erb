@@ -1,0 +1,32 @@
+<% accounts = workspace_accounts_for_nav %>
+<% return if accounts.blank? %>
+
+<nav class="workspace-rail flex flex-column align-center" aria-label="Workspaces">
+  <div id="workspace-rail-list"
+       class="workspace-rail__list flex flex-column align-center gap flex-item-grow">
+    <% accounts.each do |acc| %>
+      <% active = acc.id == Current.account.id %>
+      <%= button_to accounts_switch_path,
+            method: :post,
+            params: { account_id: acc.id },
+            class: "workspace-rail__btn btn avatar #{'is-active' if active}",
+            title: acc.name,
+            form: { class: "workspace-rail__form", data: { turbo: false } },
+            aria: { label: "Switch to #{acc.name}" }.merge(active ? { current: "true" } : {}) do %>
+        <%= render "users/sidebars/workspace_account_avatar", account: acc %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if workspace_administrator? %>
+    <div class="workspace-rail__footer flex flex-column align-center">
+      <%= link_to new_accounts_workspace_path,
+            class: "workspace-rail__add btn",
+            data: { turbo_frame: "_top" },
+            aria: { label: "Add workspace" },
+            title: "Add workspace" do %>
+        <%= image_tag "add.svg", size: 18, aria: { hidden: true }, class: "workspace-rail__add-icon" %>
+      <% end %>
+    </div>
+  <% end %>
+</nav>

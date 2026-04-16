@@ -33,7 +33,7 @@
   <body class="<%= body_classes %>"
         data-controller="local-time lightbox call-embed"
         data-call-embed-host-allowlist-value="<%= Calls::Configuration.trusted_hosts.to_json %>"
-        data-action="click@document->call-embed#handleLink keydown@document->call-embed#closeWithEscape">
+        data-action="click@document->call-embed#handleLink">
     <a href="#main-content" class="skip-navigation btn">Skip to main content</a>
 
     <nav id="nav">
@@ -61,19 +61,6 @@
       </footer>
     </main>
 
-    <div class="call-embed-modal" data-call-embed-target="modal" hidden>
-      <div class="call-embed-modal__content">
-        <div class="call-embed-modal__header">
-          <h2 class="call-embed-modal__title">Call in progress</h2>
-          <button type="button" class="btn btn--plain" data-action="call-embed#close">Close</button>
-        </div>
-        <iframe class="call-embed-modal__frame"
-                data-call-embed-target="frame"
-                allow="camera; microphone; display-capture; autoplay; clipboard-write; fullscreen">
-        </iframe>
-      </div>
-    </div>
-
     <div class="sidebar-shell" data-controller="sidebar-drawer">
       <button type="button"
               class="btn sidebar__toggle-fab"
@@ -88,9 +75,5 @@
     </div>
 
     <%= render "layouts/lightbox" %>
-
-    <a href="https://once.com" id="app-logo" target="_blank" aria-label="Once software from 37signals home page">
-      <%= image_tag "campfire-icon.png", alt: "Campfire logo", width: 256, height: 216 %>
-    </a>
   </body>
 </html>

@@ -1,22 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
+// Opens trusted call URLs in a new browser tab (web + PWA). Native app uses default link handling.
 export default class extends Controller {
-  static targets = [ "modal", "frame" ]
   static values = { hostAllowlist: Array }
 
   connect() {
     this.hostAllowlistValue = this.hostAllowlistValue?.length ? this.hostAllowlistValue : [ "meet.jit.si" ]
-    this.beforeVisit = () => this.close()
-    document.addEventListener("turbo:before-visit", this.beforeVisit)
-    document.addEventListener("turbo:before-cache", this.beforeVisit)
-    window.addEventListener("pagehide", this.beforeVisit)
-  }
-
-  disconnect() {
-    document.removeEventListener("turbo:before-visit", this.beforeVisit)
-    document.removeEventListener("turbo:before-cache", this.beforeVisit)
-    window.removeEventListener("pagehide", this.beforeVisit)
-    this.close()
   }
 
   handleLink(event) {
@@ -29,22 +18,11 @@ export default class extends Controller {
     if (!url || !this.#trustedCallHost(url.hostname)) return
 
     event.preventDefault()
-    this.open(url.toString())
-  }
-
-  close(event) {
-    if (event) event.preventDefault()
-    this.modalTarget.hidden = true
-    this.frameTarget.src = "about:blank"
-  }
-
-  closeWithEscape(event) {
-    if (!this.modalTarget.hidden && event.key === "Escape") this.close()
-  }
-
-  open(url) {
-    this.frameTarget.src = url
-    this.modalTarget.hidden = false
+    const targetUrl = url.toString()
+    const opened = window.open(targetUrl, "_blank", "noopener,noreferrer")
+    if (!opened) {
+      window.location.assign(targetUrl)
+    }
   }
 
   #toURL(value) {

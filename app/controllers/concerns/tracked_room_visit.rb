@@ -10,11 +10,11 @@ module TrackedRoomVisit
   end
 
   def last_room_visited
-    Current.user.rooms.find_by(id: cookies[:last_room]) || default_room
+    Current.user.rooms_in_account(Current.account).find_by(id: cookies[:last_room]) || default_room
   end
 
   private
     def default_room
-      Current.user.rooms.original
+      Current.user.rooms_in_account(Current.account).order(:created_at).first
     end
 end

@@ -16,11 +16,11 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create" do
-    assert_turbo_stream_broadcasts :rooms, count: 1 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), :rooms ], count: 1 do
       post rooms_opens_url, params: { room: { name: "My New Room" } }
     end
 
-    assert_equal Room.last.memberships.count, User.count
+    assert_equal Room.last.memberships.count, accounts(:signal).users.active.without_bots.count
     assert_redirected_to room_url(Room.last)
   end
 
@@ -36,7 +36,7 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
   test "only admins or creators can update" do
     sign_in :jz
 
-    assert_turbo_stream_broadcasts :rooms, count: 0 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), :rooms ], count: 0 do
       put rooms_open_url(rooms(:hq)), params: { room: { name: "New Name" } }
     end
 
@@ -45,7 +45,7 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "update" do
-    assert_turbo_stream_broadcasts :rooms, count: 1 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), :rooms ], count: 1 do
       put rooms_open_url(rooms(:pets)), params: { room: { name: "New Name" } }
     end
 
@@ -55,6 +55,6 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
 
   test "update a closed room to be open" do
     put rooms_open_url(rooms(:designers)), params: { room: { name: "Doesn't matter" } }
-    assert_equal rooms(:designers).memberships.count, User.count
+    assert_equal rooms(:designers).memberships.count, accounts(:signal).users.active.without_bots.count
   end
 end

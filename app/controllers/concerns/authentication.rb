@@ -1,6 +1,7 @@
 module Authentication
   extend ActiveSupport::Concern
   include SessionLookup
+  include SignInBranding
 
   included do
     before_action :require_authentication
@@ -56,8 +57,13 @@ module Authentication
       redirect_to root_url if signed_in?
     end
 
-    def start_new_session_for(user)
-      user.sessions.start!(user_agent: request.user_agent, ip_address: request.remote_ip).tap do |session|
+    def start_new_session_for(user, account: nil)
+      session.delete(SignInBranding::SESSION_KEY)
+
+      account_id = account&.id || user.account_memberships.order(:created_at).pick(:account_id)
+      raise ActiveRecord::RecordNotFound, "User has no workspace membership" unless account_id
+
+      user.sessions.start!(user_agent: request.user_agent, ip_address: request.remote_ip, account_id: account_id).tap do |session|
         authenticated_as session
       end
     end

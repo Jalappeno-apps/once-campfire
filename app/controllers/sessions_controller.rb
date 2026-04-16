@@ -2,6 +2,7 @@ class SessionsController < ApplicationController
   allow_unauthenticated_access only: %i[ new create ]
   rate_limit to: 10, within: 3.minutes, only: :create, with: -> { render_rejection :too_many_requests }
 
+  before_action :assign_sign_in_branding_from_params, only: %i[ new create ]
   before_action :ensure_user_exists, only: :new
 
   def new

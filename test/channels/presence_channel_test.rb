@@ -15,7 +15,7 @@ class PresenceChannelTest < ActionCable::Channel::TestCase
   end
 
   test "rejects subscription to a room that the user is not a member of" do
-    subscribe room_id: Rooms::Closed.create!(name: "New Room", creator: users(:david)).id
+    subscribe room_id: Rooms::Closed.create!(name: "New Room", creator: users(:david), account: accounts(:signal)).id
 
     assert subscription.rejected?
   end

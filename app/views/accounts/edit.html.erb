@@ -5,7 +5,7 @@
     <%= link_back_to_last_room_visited %>
   </div>
 
-  <% if Current.user.administrator? %>
+  <% if workspace_administrator? %>
     <div class="flex align-center gap flex-item-justify-end">
       <%= link_to account_bots_path, class: "btn", style: "view-transition-name: chat-bots" do %>
         <%= image_tag "bot.svg", aria: { hidden: "true" }, size: 20 %>
@@ -21,7 +21,7 @@
 <% end %>
 
 <section class="panel txt-align-center flex flex-column gap" style="view-transition-name: account-settings">
-  <% if Current.user.can_administer? %>
+  <% if workspace_administrator? %>
     <div class="align-center center avatar__form gap" data-controller="upload-preview">
       <%= form_with model: @account, method: :patch, class: "txt--medium", data: { controller: "form" } do |form| %>
         <label class="btn input--file">

@@ -34,6 +34,8 @@ const CALL_NOTIFICATION_CATEGORY_ID = "incoming_call";
 const CALL_ACTION_ACCEPT = "accept_call";
 const CALL_ACTION_DECLINE = "decline_call";
 const INCOMING_CALL_VIBRATION_PATTERN = [0, 750, 450, 750];
+/** Height of the minimized Jitsi strip; must match reserved space on the chat WebView below */
+const MINIMIZED_CALL_DOCK_HEIGHT = 58;
 
 async function configureCallNotificationActions(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(CALL_NOTIFICATION_CATEGORY_ID, [
@@ -250,6 +252,7 @@ function AppContent() {
   const [pendingNotificationPath, setPendingNotificationPath] = useState<string | null>(null);
   const [webViewSourceUrl, setWebViewSourceUrl] = useState<string | null>(null);
   const [activeCallUrl, setActiveCallUrl] = useState<string | null>(null);
+  const [callMinimized, setCallMinimized] = useState(false);
   const [incomingCall, setIncomingCall] = useState<IncomingCallPayload | null>(null);
   const [webViewError, setWebViewError] = useState<string | null>(null);
   const [trustedCallHosts, setTrustedCallHosts] = useState<string[]>(["meet.jit.si"]);
@@ -388,6 +391,10 @@ function AppContent() {
     });
     return () => sub.remove();
   }, [refreshAuthSession]);
+
+  useEffect(() => {
+    if (activeCallUrl) setCallMinimized(false);
+  }, [activeCallUrl]);
 
   useEffect(() => {
     if (!domain) return;
@@ -749,7 +756,16 @@ function AppContent() {
         </ScrollView>
       )}
 
-      <View style={[styles.webviewWrap, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.webviewWrap,
+          { backgroundColor: colors.background },
+          activeCallUrl &&
+            callMinimized && {
+              paddingBottom: MINIMIZED_CALL_DOCK_HEIGHT + insets.bottom
+            }
+        ]}
+      >
         <WebView
           ref={webViewRef}
           source={{ uri: webViewSourceUrl ?? domain }}
@@ -784,35 +800,78 @@ function AppContent() {
       </View>
 
       {activeCallUrl && (
-        <View style={styles.callOverlay}>
-          <View
-            style={[
-              styles.callHeader,
-              {
-                backgroundColor: colors.surface,
-                borderBottomColor: colors.border,
-                paddingTop: Math.max(insets.top + 8, 14)
-              }
-            ]}
-          >
-            <Text style={[styles.callTitle, { color: colors.text }]}>Call in progress</Text>
-            <TouchableOpacity
-              style={[styles.buttonSecondary, styles.callCloseButton, { borderColor: colors.primary }]}
-              onPress={() => setActiveCallUrl(null)}
+        <View
+          style={
+            !callMinimized
+              ? styles.callOverlayFullscreen
+              : [
+                  styles.callOverlayMinimizedBase,
+                  styles.callOverlayMinimizedBottom,
+                  { bottom: insets.bottom }
+                ]
+          }
+        >
+          <View style={[styles.callShell, callMinimized ? styles.callShellDocked : styles.callShellFullscreen]}>
+            <View
+              style={[
+                styles.callHeader,
+                callMinimized && styles.callHeaderDocked,
+                {
+                  backgroundColor: colors.surface,
+                  borderBottomColor: colors.border,
+                  paddingTop: callMinimized ? 6 : Math.max(insets.top + 8, 14)
+                }
+              ]}
             >
-              <Text style={[styles.buttonSecondaryLabel, { color: colors.primary }]}>Close</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                disabled={!callMinimized}
+                onPress={() => setCallMinimized(false)}
+                style={callMinimized ? styles.callTitlePressable : undefined}
+              >
+                <Text style={[styles.callTitle, { color: colors.text }]}>Call in progress</Text>
+              </TouchableOpacity>
+              <View style={styles.callHeaderActions}>
+                {callMinimized ? (
+                  <TouchableOpacity
+                    style={[styles.buttonSecondary, styles.callHeaderActionButton, { borderColor: colors.primary }]}
+                    onPress={() => setCallMinimized(false)}
+                  >
+                    <Text style={[styles.buttonSecondaryLabel, { color: colors.primary }]}>Expand</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.buttonSecondary, styles.callHeaderActionButton, { borderColor: colors.primary }]}
+                    onPress={() => setCallMinimized(true)}
+                  >
+                    <Text style={[styles.buttonSecondaryLabel, { color: colors.primary }]}>Back to chat</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[styles.buttonSecondary, styles.callHeaderActionButton, { borderColor: colors.border }]}
+                  onPress={() => {
+                    setActiveCallUrl(null);
+                    setCallMinimized(false);
+                  }}
+                >
+                  <Text style={[styles.buttonSecondaryLabel, { color: colors.text }]}>Leave</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={callMinimized ? styles.callDockPreviewOuter : styles.callWebViewOuter}>
+              <WebView
+                style={callMinimized ? styles.callWebViewDockedInner : styles.callWebView}
+                source={{ uri: activeCallUrl }}
+                javaScriptEnabled
+                domStorageEnabled
+                mediaPlaybackRequiresUserAction={false}
+                allowsInlineMediaPlayback
+                allowsFullscreenVideo
+                mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+                setSupportMultipleWindows={false}
+              />
+            </View>
           </View>
-          <WebView
-            source={{ uri: activeCallUrl }}
-            javaScriptEnabled
-            domStorageEnabled
-            mediaPlaybackRequiresUserAction={false}
-            allowsInlineMediaPlayback
-            allowsFullscreenVideo
-            mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
-            setSupportMultipleWindows={false}
-          />
         </View>
       )}
 
@@ -1003,10 +1062,42 @@ const styles = StyleSheet.create({
     color: "#2f3440",
     marginBottom: 8
   },
-  callOverlay: {
+  callOverlayFullscreen: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
     backgroundColor: "#000"
+  },
+  /* Bottom strip; chat WebView gets matching paddingBottom so the composer sits above this */
+  callOverlayMinimizedBase: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    height: MINIMIZED_CALL_DOCK_HEIGHT,
+    backgroundColor: "#111",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 10
+  },
+  callOverlayMinimizedBottom: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(148, 163, 184, 0.35)",
+    shadowOffset: { width: 0, height: -3 }
+  },
+  callShell: {
+    flex: 1,
+    flexDirection: "column",
+    backgroundColor: "#000"
+  },
+  callShellFullscreen: {
+    flex: 1
+  },
+  callShellDocked: {
+    flex: 1,
+    flexDirection: "row-reverse",
+    alignItems: "stretch",
+    backgroundColor: "#111"
   },
   callHeader: {
     paddingHorizontal: 12,
@@ -1014,16 +1105,59 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap"
+  },
+  callHeaderDocked: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderBottomWidth: 0,
+    flexWrap: "nowrap"
+  },
+  callHeaderActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexShrink: 0
+  },
+  callHeaderActionButton: {
+    marginBottom: 0,
+    paddingVertical: 6,
+    paddingHorizontal: 10
+  },
+  callTitlePressable: {
+    flex: 1,
+    minWidth: 120
   },
   callTitle: {
     fontSize: 14,
     fontWeight: "700"
   },
-  callCloseButton: {
-    marginBottom: 0,
-    paddingVertical: 6,
-    paddingHorizontal: 10
+  callWebViewOuter: {
+    flex: 1,
+    minHeight: 200,
+    backgroundColor: "#000"
+  },
+  callDockPreviewOuter: {
+    width: 88,
+    minHeight: 58,
+    maxHeight: 58,
+    alignSelf: "stretch",
+    backgroundColor: "#000"
+  },
+  callWebView: {
+    flex: 1,
+    minHeight: 200,
+    backgroundColor: "#000"
+  },
+  callWebViewDockedInner: {
+    flex: 1,
+    backgroundColor: "#000"
   },
   incomingCallOverlay: {
     ...StyleSheet.absoluteFillObject,

@@ -57,3 +57,40 @@
     display: none;
   }
 }
+
+/* Signed-in invite: match signup nametag, one column, full-width primary action */
+.join-workspace__inner {
+  padding-block: calc(var(--block-space) * 1.5);
+  padding-inline: calc(var(--inline-space) * 1.5);
+}
+
+.join-workspace__title-line {
+  max-inline-size: 100%;
+  text-align: center;
+}
+
+.join-workspace__title-line .account-logo {
+  flex-shrink: 0;
+}
+
+.join-workspace__identity strong {
+  font-weight: 650;
+}
+
+.join-workspace__hint {
+  line-height: 1.45;
+  max-inline-size: 36ch;
+}
+
+.join-workspace__form {
+  display: block;
+  inline-size: 100%;
+  margin: 0;
+  margin-block-start: var(--block-space);
+}
+
+.join-workspace__form .join-workspace__btn {
+  inline-size: 100%;
+  justify-content: center;
+  min-block-size: 2.75em;
+}

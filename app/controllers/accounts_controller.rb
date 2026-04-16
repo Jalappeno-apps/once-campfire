@@ -1,10 +1,10 @@
 class AccountsController < ApplicationController
-  before_action :ensure_can_administer, only: :update
+  before_action :ensure_workspace_administrator, only: :update
   before_action :set_account
 
   def edit
     users = account_users.ordered.without_bots
-    @administrators, @members = users.partition(&:administrator?)
+    @administrators, @members = users.partition { |u| u.workspace_administrator?(Current.account) }
     set_page_and_extract_portion_from users, per_page: 500
   end
 
@@ -23,10 +23,12 @@ class AccountsController < ApplicationController
     end
 
     def account_users
-      if Current.user.can_administer?
-        User.where(status: [ :active, :banned ])
+      base = Current.account.users
+      rel = User.where(id: base.select(:id))
+      if Current.user.workspace_administrator?(Current.account)
+        rel.where(status: [ :active, :banned ])
       else
-        User.active
+        rel.active
       end
     end
 end

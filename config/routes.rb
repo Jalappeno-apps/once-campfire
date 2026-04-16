@@ -9,6 +9,11 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :accounts do
+    resource :switch, only: :create
+    resources :workspaces, only: %i[ new create ]
+  end
+
   resource :account do
     scope module: "accounts" do
       resources :users

@@ -4,7 +4,7 @@ class RoomsController < ApplicationController
   before_action :remember_last_room_visited, only: :show
 
   def index
-    redirect_to room_url(Current.user.rooms.last)
+    redirect_to room_url(Current.user.rooms_in_account(Current.account).last)
   end
 
   def show
@@ -20,7 +20,7 @@ class RoomsController < ApplicationController
 
   private
     def set_room
-      if room = Current.user.rooms.find_by(id: params[:room_id] || params[:id])
+      if room = Current.user.rooms_in_account(Current.account).find_by(id: params[:room_id] || params[:id])
         @room = room
       else
         redirect_to root_url, alert: "Room not found or inaccessible"
@@ -32,7 +32,7 @@ class RoomsController < ApplicationController
     end
 
     def ensure_permission_to_create_rooms
-      if Current.account.settings.restrict_room_creation_to_administrators? && !Current.user.administrator?
+      if Current.account.settings.restrict_room_creation_to_administrators? && !Current.user.workspace_administrator?(Current.account)
         head :forbidden
       end
     end
@@ -52,6 +52,6 @@ class RoomsController < ApplicationController
     end
 
     def broadcast_remove_room
-      broadcast_remove_to :rooms, target: [ @room, :list ]
+      broadcast_remove_to [ @room.account, :rooms ], target: [ @room, :list ]
     end
 end

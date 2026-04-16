@@ -2,9 +2,15 @@ require "test_helper"
 
 class FirstRunTest < ActiveSupport::TestCase
   setup do
-    Account.destroy_all
-    Room.destroy_all
-    User.destroy_all
+    ActiveRecord::Base.connection.disable_referential_integrity do
+      ActiveRecord::Base.connection.tables.each do |table|
+        next if table.in?(%w[ schema_migrations ar_internal_metadata ])
+        next if table.start_with?("sqlite_")
+        next if table == "message_search_index"
+
+        ActiveRecord::Base.connection.execute("DELETE FROM #{ActiveRecord::Base.connection.quote_table_name(table)}")
+      end
+    end
   end
 
   test "creating makes first user an administrator" do

@@ -9,6 +9,28 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "new shows workspace name when join_code identifies a workspace" do
+    get new_session_url(join_code: accounts(:signal).join_code)
+    assert_response :success
+    assert_select "legend strong", text: accounts(:signal).name
+  end
+
+  test "new shows Campfire when no workspace is specified" do
+    get new_session_url
+    assert_response :success
+    assert_select "legend strong", text: "Campfire"
+  end
+
+  test "unauthenticated account logo uses workspace branding after visiting sign-in with join_code" do
+    accounts(:signal).update! logo: fixture_file_upload("moon.jpg", "image/jpeg")
+
+    get new_session_url(join_code: accounts(:signal).join_code)
+    get account_logo_url
+
+    stock = File.binread(Rails.root.join("app/assets/images/logos/app-icon.png"))
+    assert_not_equal stock, @response.body
+  end
+
   test "new redirects to first run when no users exist" do
     User.destroy_all
 

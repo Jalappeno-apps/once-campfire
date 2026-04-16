@@ -1,9 +1,9 @@
 class Accounts::BotsController < ApplicationController
-  before_action :ensure_can_administer
+  before_action :ensure_workspace_administrator
   before_action :set_bot, only: %i[ edit update destroy ]
 
   def index
-    @bots = User.active_bots.ordered
+    @bots = User.active_bots.joins(:account_memberships).where(account_memberships: { account_id: Current.account.id }).ordered
   end
 
   def new
@@ -30,7 +30,7 @@ class Accounts::BotsController < ApplicationController
 
   private
     def set_bot
-      @bot = User.active_bots.find(params[:id])
+      @bot = User.active_bots.joins(:account_memberships).where(account_memberships: { account_id: Current.account.id }).find(params[:id])
     end
 
     def bot_params

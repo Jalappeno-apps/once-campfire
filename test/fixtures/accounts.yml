@@ -1,3 +1,6 @@
+<% signal_id = ActiveRecord::FixtureSet.identify(:signal) %>
 signal:
+  id: <%= signal_id %>
   name: 37signals
   join_code: CRMu-l8Ge-KB9B
+  singleton_guard: <%= signal_id %>

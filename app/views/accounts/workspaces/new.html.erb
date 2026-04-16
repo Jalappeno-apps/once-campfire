@@ -1,0 +1,21 @@
+<% @page_title = "New workspace" %>
+
+<% content_for :nav do %>
+  <div class="flex-item-justify-start">
+    <%= link_back_to_last_room_visited %>
+  </div>
+<% end %>
+
+<section class="panel txt-align-center flex flex-column gap pad-inline-double pad-block-double">
+  <h1 class="txt-x-large">Create a workspace</h1>
+
+  <%= form_with model: @account, url: accounts_workspaces_path, class: "flex flex-column gap full-width", data: { controller: "form" } do |form| %>
+    <label class="flex flex-column gap txt-align-start">
+      <span class="txt-small">Workspace name</span>
+      <%= form.text_field :name, class: "input txt-large", autocomplete: "off", autofocus: true %>
+    </label>
+    <%= form.button class: "btn btn--reversed center", type: "submit" do %>
+      Create workspace
+    <% end %>
+  <% end %>
+</section>

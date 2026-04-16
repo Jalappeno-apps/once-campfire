@@ -8,7 +8,7 @@ class WelcomeControllerTest < ActionDispatch::IntegrationTest
   test "redirects to the first created visible room the user has access to" do
     get root_url
 
-    assert_redirected_to room_url(users(:david).rooms.original)
+    assert_redirected_to room_url(users(:david).rooms_in_account(accounts(:signal)).order(:created_at).first)
   end
 
   test "redirects to the last room visited, if we have one" do

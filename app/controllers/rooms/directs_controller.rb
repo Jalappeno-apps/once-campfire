@@ -5,7 +5,7 @@ class Rooms::DirectsController < RoomsController
   end
 
   def create
-    room = Rooms::Direct.find_or_create_for(selected_users)
+    room = Rooms::Direct.find_or_create_for(selected_users, account: Current.account)
 
     broadcast_create_room(room)
     redirect_to room_url(room)
@@ -16,7 +16,7 @@ class Rooms::DirectsController < RoomsController
 
   private
     def selected_users
-      User.where(id: selected_users_ids.including(Current.user.id))
+      Current.account.users.where(id: selected_users_ids.including(Current.user.id))
     end
 
     def selected_users_ids
@@ -25,7 +25,7 @@ class Rooms::DirectsController < RoomsController
 
     def broadcast_create_room(room)
       room.memberships.each do |membership|
-        membership.broadcast_prepend_to membership.user, :rooms, target: :direct_rooms, partial: "users/sidebars/rooms/shared", locals: { membership: membership }
+        membership.broadcast_prepend_to [ room.account, membership.user ], :rooms, target: :direct_rooms, partial: "users/sidebars/rooms/shared", locals: { membership: membership }
       end
     end
 

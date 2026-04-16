@@ -12,6 +12,16 @@ class Autocompletable::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "David", response.parsed_body.first["name"]
   end
 
+  test "blank query lists workspace inviter first" do
+    users(:jz).account_memberships.find_by(account: accounts(:signal)).update!(invited_by: users(:david))
+
+    sign_in :jz
+    get autocompletable_users_url(format: :json)
+
+    assert_response :success
+    assert_equal users(:david).id, response.parsed_body.first["value"]
+  end
+
   test "search results escape HTML in names" do
     users(:david).update!(name: "David <script>alert(123)</script>")
 

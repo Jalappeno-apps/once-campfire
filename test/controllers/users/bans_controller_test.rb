@@ -7,8 +7,8 @@ class Users::BansControllerTest < ActionDispatch::IntegrationTest
 
   test "create bans user and creates ban records from sessions" do
     user = users(:kevin)
-    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test")
-    user.sessions.create!(ip_address: "203.0.113.2", user_agent: "Test")
+    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test", account: accounts(:signal))
+    user.sessions.create!(ip_address: "203.0.113.2", user_agent: "Test", account: accounts(:signal))
 
     assert_difference -> { Ban.count }, 2 do
       post user_ban_url(user)
@@ -21,7 +21,7 @@ class Users::BansControllerTest < ActionDispatch::IntegrationTest
 
   test "create destroys user sessions" do
     user = users(:kevin)
-    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test")
+    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test", account: accounts(:signal))
 
     assert_difference -> { user.sessions.count }, -1 do
       post user_ban_url(user)
@@ -38,7 +38,7 @@ class Users::BansControllerTest < ActionDispatch::IntegrationTest
 
   test "RemoveBannedContentJob deletes messages" do
     user = users(:kevin)
-    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test")
+    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test", account: accounts(:signal))
     user.messages.create!(room: rooms(:hq), body: "Test message", client_message_id: "test-123")
 
     perform_enqueued_jobs do
@@ -58,7 +58,7 @@ class Users::BansControllerTest < ActionDispatch::IntegrationTest
 
   test "destroy removes ban records and sets user to active" do
     user = users(:kevin)
-    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test")
+    user.sessions.create!(ip_address: "203.0.113.1", user_agent: "Test", account: accounts(:signal))
     user.ban
 
     assert user.reload.banned?

@@ -8,7 +8,7 @@ class User::BotTest < ActiveSupport::TestCase
     uuid = "3574925f-479d-44f8-82b7-fc039af5367c"
     Random.stubs(:uuid).returns(uuid)
 
-    bot = User.create_bot!(name: "Bender")
+    bot = User.create_bot!(name: "Bender", account: accounts(:signal))
     assert_equal "#{bot.id}-#{token}", bot.bot_key
   end
 
@@ -16,7 +16,7 @@ class User::BotTest < ActiveSupport::TestCase
     first_token = "5M0aLYwQyBXOXa5Wsz6NZb11EE4tW2"
     SecureRandom.stubs(:alphanumeric).returns(first_token)
 
-    bot = User.create_bot!(name: "Bender")
+    bot = User.create_bot!(name: "Bender", account: accounts(:signal))
     assert_equal "#{bot.id}-#{first_token}", bot.bot_key
 
     second_token = "R4kme9anwWRuz3sSoBXiB8Li8ioZPP"
@@ -27,7 +27,7 @@ class User::BotTest < ActiveSupport::TestCase
   end
 
   test "authenticate" do
-    bot = User.create_bot!(name: "Bender")
+    bot = User.create_bot!(name: "Bender", account: accounts(:signal))
     assert User.authenticate_bot(bot.bot_key)
   end
 

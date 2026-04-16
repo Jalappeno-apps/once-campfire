@@ -10,14 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
+ActiveRecord::Schema[8.2].define(version: 2026_04_17_000003) do
+  create_table "account_memberships", force: :cascade do |t|
+    t.integer "account_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "invited_by_id"
+    t.integer "role", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["account_id"], name: "index_account_memberships_on_account_id"
+    t.index ["invited_by_id"], name: "index_account_memberships_on_invited_by_id"
+    t.index ["user_id", "account_id"], name: "index_account_memberships_on_user_id_and_account_id", unique: true
+    t.index ["user_id"], name: "index_account_memberships_on_user_id"
+  end
+
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "custom_styles"
     t.string "join_code", null: false
     t.string "name", null: false
     t.json "settings"
-    t.integer "singleton_guard", default: 0, null: false
+    t.bigint "singleton_guard", null: false
     t.datetime "updated_at", null: false
     t.index ["singleton_guard"], name: "index_accounts_on_singleton_guard", unique: true
   end
@@ -93,6 +106,42 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
     t.index ["token"], name: "index_calls_invites_on_token", unique: true
   end
 
+  create_table "calls_session_targets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "responded_at"
+    t.integer "session_id", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["session_id", "user_id"], name: "index_calls_session_targets_on_session_id_and_user_id", unique: true
+    t.index ["session_id"], name: "index_calls_session_targets_on_session_id"
+    t.index ["status"], name: "index_calls_session_targets_on_status"
+    t.index ["user_id"], name: "index_calls_session_targets_on_user_id"
+  end
+
+  create_table "calls_sessions", force: :cascade do |t|
+    t.datetime "accepted_at"
+    t.integer "accepted_by_id"
+    t.text "call_url", null: false
+    t.integer "caller_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "ended_at"
+    t.datetime "expires_at", null: false
+    t.integer "invite_id"
+    t.integer "message_id"
+    t.string "path"
+    t.integer "room_id", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["accepted_by_id"], name: "index_calls_sessions_on_accepted_by_id"
+    t.index ["caller_id"], name: "index_calls_sessions_on_caller_id"
+    t.index ["expires_at"], name: "index_calls_sessions_on_expires_at"
+    t.index ["invite_id"], name: "index_calls_sessions_on_invite_id"
+    t.index ["message_id"], name: "index_calls_sessions_on_message_id"
+    t.index ["room_id"], name: "index_calls_sessions_on_room_id"
+    t.index ["status"], name: "index_calls_sessions_on_status"
+  end
+
   create_table "memberships", force: :cascade do |t|
     t.datetime "connected_at"
     t.integer "connections", default: 0, null: false
@@ -144,11 +193,13 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
   end
 
   create_table "rooms", force: :cascade do |t|
+    t.integer "account_id", null: false
     t.datetime "created_at", null: false
     t.bigint "creator_id", null: false
     t.string "name"
     t.string "type", null: false
     t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rooms_on_account_id"
   end
 
   create_table "searches", force: :cascade do |t|
@@ -160,6 +211,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
   end
 
   create_table "sessions", force: :cascade do |t|
+    t.integer "account_id", null: false
     t.datetime "created_at", null: false
     t.string "ip_address"
     t.datetime "last_active_at", null: false
@@ -167,6 +219,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
     t.datetime "updated_at", null: false
     t.string "user_agent"
     t.integer "user_id", null: false
+    t.index ["account_id"], name: "index_sessions_on_account_id"
     t.index ["token"], name: "index_sessions_on_token", unique: true
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
@@ -193,16 +246,28 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
     t.index ["user_id"], name: "index_webhooks_on_user_id"
   end
 
+  add_foreign_key "account_memberships", "accounts"
+  add_foreign_key "account_memberships", "users"
+  add_foreign_key "account_memberships", "users", column: "invited_by_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "bans", "users"
   add_foreign_key "boosts", "messages"
   add_foreign_key "calls_invites", "rooms"
   add_foreign_key "calls_invites", "users", column: "creator_id"
+  add_foreign_key "calls_session_targets", "calls_sessions", column: "session_id"
+  add_foreign_key "calls_session_targets", "users"
+  add_foreign_key "calls_sessions", "calls_invites", column: "invite_id"
+  add_foreign_key "calls_sessions", "messages"
+  add_foreign_key "calls_sessions", "rooms"
+  add_foreign_key "calls_sessions", "users", column: "accepted_by_id"
+  add_foreign_key "calls_sessions", "users", column: "caller_id"
   add_foreign_key "messages", "rooms"
   add_foreign_key "messages", "users", column: "creator_id"
   add_foreign_key "mobile_devices", "users"
   add_foreign_key "push_subscriptions", "users"
+  add_foreign_key "rooms", "accounts"
   add_foreign_key "searches", "users"
+  add_foreign_key "sessions", "accounts"
   add_foreign_key "sessions", "users"
   add_foreign_key "webhooks", "users"
 

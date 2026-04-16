@@ -12,19 +12,19 @@ class Rooms::OpensController < RoomsController
   end
 
   def new
-    @room = Rooms::Open.new(name: DEFAULT_ROOM_NAME)
-    @users = User.active.ordered
+    @room = Rooms::Open.new(name: DEFAULT_ROOM_NAME, account: Current.account)
+    @users = Current.account.users.active.ordered
   end
 
   def create
-    room = Rooms::Open.create_for(room_params, users: Current.user)
+    room = Rooms::Open.create_for(room_params.merge(account: Current.account), users: Current.user)
 
     broadcast_create_room(room)
     redirect_to room_url(room)
   end
 
   def edit
-    @users = User.active.ordered
+    @users = Current.account.users.active.ordered
   end
 
   def update
@@ -41,10 +41,10 @@ class Rooms::OpensController < RoomsController
     end
 
     def broadcast_create_room(room)
-      broadcast_prepend_to :rooms, target: :channel_rooms, partial: "users/sidebars/rooms/shared", locals: { room: room }
+      broadcast_prepend_to [ Current.account, :rooms ], target: :channel_rooms, partial: "users/sidebars/rooms/shared", locals: { room: room }
     end
 
     def broadcast_update_room
-      broadcast_replace_to :rooms, target: [ @room, :list ], partial: "users/sidebars/rooms/shared", locals: { room: @room }
+      broadcast_replace_to [ Current.account, :rooms ], target: [ @room, :list ], partial: "users/sidebars/rooms/shared", locals: { room: @room }
     end
 end

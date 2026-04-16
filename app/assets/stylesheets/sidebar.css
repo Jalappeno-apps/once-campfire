@@ -69,6 +69,14 @@ body.sidebar #sidebar {
   --btn-padding: 0;
 
   flex-shrink: 0;
+
+  .account-logo__initials {
+    color: var(--sidebar-fg);
+  }
+}
+
+#sidebar .sidebar__account-logo .account-logo {
+  --avatar-size: 2.25rem;
 }
 
 .sidebar__body {
@@ -89,6 +97,7 @@ body.sidebar #sidebar {
   position: fixed;
   inset-block-end: 0;
   inset-inline-end: 0;
+  transition: inset-inline-end 180ms ease;
   z-index: 4;
 
   @media (max-width: 100ch) {
@@ -97,7 +106,22 @@ body.sidebar #sidebar {
   }
 
   @media (min-width: 100ch) {
-    inline-size: var(--sidebar-width);
+    /* Channel column width (rail is a sibling; tools are not under the rail) */
+    inline-size: var(--sidebar-channel-width, var(--sidebar-width));
+  }
+}
+
+/* Fixed tools must not cover the workspace rail (channel + rail share the drawer on mobile). */
+#sidebar:has(.workspace-rail) .sidebar__tools {
+  inset-inline-end: var(--workspace-rail-width, 0px);
+
+  @media (max-width: 100ch) {
+    inline-size: unset;
+    inset-inline-start: 0;
+  }
+
+  @media (min-width: 100ch) {
+    inline-size: var(--sidebar-channel-width, var(--sidebar-width));
   }
 }
 
@@ -119,6 +143,11 @@ body.sidebar #sidebar {
   .avatar {
     --avatar-border-radius: 50%;
   }
+}
+
+/* Profile photo: avoid `buttons.css` dark-mode invert on `.btn img:not([class])` */
+#sidebar .sidebar__profile-avatar {
+  filter: none;
 }
 
 .sidebar__settings {
@@ -696,5 +725,199 @@ body.sidebar #sidebar {
 
   #sidebar .room {
     --btn-padding: 0.36em 0.55rem;
+  }
+}
+
+#user_sidebar {
+  block-size: 100%;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  max-block-size: 100dvh;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.sidebar__layout {
+  align-items: stretch;
+  block-size: 100%;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  max-block-size: 100dvh;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.sidebar__column {
+  flex: 1 1 auto;
+  max-block-size: 100dvh;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+/* Workspace rail: same column layout on all viewports (inside the drawer on narrow screens). */
+.workspace-rail {
+  /* Cap logo size so tiles don’t fill the full column; still scales down if the rail is narrow. */
+  --workspace-rail-avatar: min(2.45rem, calc(var(--workspace-rail-width) - 0.9rem));
+
+  background-color: #0c0c0c;
+  border-inline-start: 1px solid var(--sidebar-border);
+  box-sizing: border-box;
+  flex: 0 0 var(--workspace-rail-width);
+  justify-content: space-between;
+  max-block-size: 100dvh;
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding-block: 0.5rem 0.65rem;
+  padding-inline: 0.35rem;
+  transition: flex-basis 180ms ease;
+
+  @media (max-width: 100ch) {
+    /* Align with header safe area — rail is full-height, header already pads the column only */
+    padding-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
+    padding-block-end: calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.sidebar__layout.workspace-rail--collapsed .workspace-rail {
+  border-width: 0;
+  display: none;
+  flex: 0 0 0;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-rail__list {
+  flex: 1 1 auto;
+  gap: 0.4rem;
+  min-block-size: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.workspace-rail__footer {
+  flex-shrink: 0;
+  margin-block-start: auto;
+  padding-block-start: 0.35rem;
+}
+
+.workspace-rail__form {
+  display: block;
+  inline-size: 100%;
+  margin: 0;
+}
+
+.workspace-rail__toggle--header {
+  --btn-background: rgb(255 255 255 / 0.1);
+  --btn-border-color: transparent;
+  --btn-padding: 0.1rem;
+  --hover-color: var(--sidebar-btn-hover-outline);
+
+  display: inline-flex;
+  flex-shrink: 0;
+
+  .workspace-rail__icon {
+    filter: invert(100%);
+    opacity: 0.9;
+  }
+}
+
+.sidebar__layout.workspace-rail--collapsed .workspace-rail__toggle--header .workspace-rail__icon--expanded,
+.sidebar__layout:not(.workspace-rail--collapsed) .workspace-rail__toggle--header .workspace-rail__icon--collapsed {
+  display: none;
+}
+
+/* `btn` + `avatar` on the control avoids `buttons.css` shrinking imgs to 1.3em on `.btn:has(img):not(.avatar)`. */
+.workspace-rail__btn.avatar {
+  --avatar-border-radius: 0.45em;
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-border-radius: 0.45rem;
+  --btn-border-size: 0;
+  --btn-color: var(--sidebar-fg);
+  --btn-padding: 0;
+  --hover-color: rgb(255 255 255 / 0.22);
+
+  align-items: center;
+  block-size: calc(var(--workspace-rail-avatar) + 0.2rem);
+  border: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  inline-size: 100%;
+  justify-content: center;
+  max-inline-size: calc(var(--workspace-rail-avatar) + 0.2rem);
+  min-inline-size: calc(var(--workspace-rail-avatar) + 0.2rem);
+  overflow: visible;
+
+  &:hover {
+    filter: none;
+  }
+}
+
+.workspace-rail__btn .account-logo {
+  --avatar-border-radius: 0.45em;
+  --avatar-size: var(--workspace-rail-avatar);
+  block-size: var(--avatar-size);
+  border-radius: var(--avatar-border-radius);
+  flex-shrink: 0;
+  inline-size: var(--avatar-size);
+}
+
+/* `outline` ignores `border-radius` in browsers → broken rings. Use `box-shadow`, which follows the rounded rect. */
+.workspace-rail__btn.avatar.is-active .account-logo {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.92);
+}
+
+/* Fill the figure; `buttons.css` `.btn.avatar img { inline-size: 100% }` sizes against the figure, not 1.3em. */
+#sidebar .workspace-rail .account-logo img {
+  block-size: 100%;
+  filter: none;
+  inline-size: 100%;
+  max-block-size: 100%;
+  max-inline-size: 100%;
+  object-fit: cover;
+}
+
+.workspace-rail .account-logo__initials {
+  color: rgb(255 255 255 / 0.95);
+  font-size: 0.58rem;
+}
+
+.workspace-rail__add {
+  --btn-background: transparent;
+  --btn-border-color: rgb(255 255 255 / 0.22);
+  --btn-border-radius: 0.45rem;
+  --btn-color: var(--sidebar-fg-muted);
+  --btn-padding: 0;
+  --hover-color: rgb(255 255 255 / 0.35);
+
+  align-items: center;
+  block-size: calc(var(--workspace-rail-avatar) + 0.45rem);
+  flex-shrink: 0;
+  inline-size: calc(var(--workspace-rail-avatar) + 0.45rem);
+  justify-content: center;
+}
+
+.workspace-rail__add-icon {
+  filter: invert(100%);
+  opacity: 0.85;
+}
+
+/* ⋯ menu only when there is no workspace rail (same rail UI replaces it on mobile and desktop). */
+#sidebar:has(.workspace-rail) .sidebar__workspace-switcher--mobile {
+  display: none !important;
+}
+
+.sidebar__workspace-switcher--mobile {
+  @media (min-width: 100ch) {
+    display: none;
+  }
+}
+
+#sidebar .sidebar__workspace-header .sidebar__account-logo {
+  @media (min-width: 100ch) {
+    display: none;
   }
 }

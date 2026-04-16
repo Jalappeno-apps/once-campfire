@@ -2,30 +2,37 @@ pets:
   name: All Pets
   type: Rooms::Open
   creator: :david
+  account: signal
 
 hq:
   name: HQ
   type: Rooms::Open
   creator: :david
+  account: signal
 
 watercooler:
   name: All Talk
   type: Rooms::Closed
   creator: :david
+  account: signal
 
 designers:
   name: Designers
   type: Rooms::Closed
   creator: :david
+  account: signal
 
 david_and_jason:
   type: Rooms::Direct
   creator: :david
+  account: signal
 
 david_and_kevin:
   type: Rooms::Direct
   creator: :david
+  account: signal
 
 bender_and_kevin:
   type: Rooms::Direct
   creator: :kevin
+  account: signal

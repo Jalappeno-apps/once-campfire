@@ -1,5 +1,5 @@
 <div class="flex flex-column align-center gap">
-  <% url = Current.account&.join_code ? join_url(Current.account.join_code) : nil %>
+  <% url = Current.account&.join_code ? join_url(Current.account.join_code, invited_by: Current.user.id) : nil %>
 
   <label class="flex flex-column gap full-width" style="--row-gap: 0.5em">
     <strong id="invite_label" class="invite-label">Share to invite more people</strong>

@@ -4,11 +4,12 @@ class Session < ApplicationRecord
   has_secure_token
 
   belongs_to :user
+  belongs_to :account
 
   before_create { self.last_active_at ||= Time.now }
 
-  def self.start!(user_agent:, ip_address:)
-    create! user_agent: user_agent, ip_address: ip_address
+  def self.start!(user_agent:, ip_address:, account_id:)
+    create! user_agent: user_agent, ip_address: ip_address, account_id: account_id
   end
 
   def resume(user_agent:, ip_address:)

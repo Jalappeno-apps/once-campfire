@@ -1,4 +1,6 @@
 class Room < ApplicationRecord
+  belongs_to :account
+
   has_many :memberships, dependent: :delete_all do
     def grant_to(users)
       room = proxy_association.owner

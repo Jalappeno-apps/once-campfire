@@ -18,7 +18,7 @@ class RoomTest < ActiveSupport::TestCase
   end
 
   test "create for users by giving them immediate membership" do
-    room = Rooms::Closed.create_for({ name: "Hello!", creator: users(:david) }, users: [ users(:kevin), users(:david) ])
+    room = Rooms::Closed.create_for({ name: "Hello!", creator: users(:david), account: accounts(:signal) }, users: [ users(:kevin), users(:david) ])
     assert room.users.include?(users(:kevin))
     assert room.users.include?(users(:david))
   end
@@ -31,7 +31,7 @@ class RoomTest < ActiveSupport::TestCase
   end
 
   test "default involvement for new users" do
-    room = Rooms::Closed.create_for({ name: "Hello!", creator: users(:david) }, users: [ users(:kevin), users(:david) ])
+    room = Rooms::Closed.create_for({ name: "Hello!", creator: users(:david), account: accounts(:signal) }, users: [ users(:kevin), users(:david) ])
     assert room.memberships.all? { |m| m.involved_in_mentions? }
   end
 

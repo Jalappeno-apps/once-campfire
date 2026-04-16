@@ -23,7 +23,7 @@ class Users::SidebarsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "chat bot accounts are listed in the Chat bots section and open the bot DM" do
-    chat_room = Current.set(user: users(:david)) { Rooms::Direct.find_or_create_for([ users(:david), users(:bender) ]) }
+    chat_room = Current.set(user: users(:david)) { Rooms::Direct.find_or_create_for([ users(:david), users(:bender) ], account: accounts(:signal)) }
 
     get user_sidebar_url
 
@@ -31,7 +31,7 @@ class Users::SidebarsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "1:1 bot chats are not duplicated under Direct messages" do
-    chat_room = Current.set(user: users(:david)) { Rooms::Direct.find_or_create_for([ users(:david), users(:bender) ]) }
+    chat_room = Current.set(user: users(:david)) { Rooms::Direct.find_or_create_for([ users(:david), users(:bender) ], account: accounts(:signal)) }
 
     get user_sidebar_url
 

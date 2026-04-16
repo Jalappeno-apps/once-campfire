@@ -2,15 +2,15 @@
 # always refer to the same direct room.
 class Rooms::Direct < Room
   class << self
-    def find_or_create_for(users)
-      find_for(users) || create_for({}, users: users)
+    def find_or_create_for(users, account:)
+      find_for(users, account: account) || create_for({ account: account }, users: users)
     end
 
     private
       # FIXME: Find a more performant algorithm that won't be a problem on accounts with 10K+ direct rooms,
       # which could be to store the membership id list as a hash on the room, and use that for lookup.
-      def find_for(users)
-        all.joins(:users).detect do |room|
+      def find_for(users, account:)
+        where(account_id: account.id).joins(:users).detect do |room|
           Set.new(room.user_ids) == Set.new(users.pluck(:id))
         end
       end

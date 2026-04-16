@@ -21,9 +21,12 @@ body {
   }
 
   &.sidebar {
+    /* Rail width (expanded): JS only sets `0px` when collapsed; otherwise this value is used. */
+    --workspace-rail-width: 4.5rem;
+
     @media (min-width: 100ch) {
-      /* One width for grid column, nav offset, autocomplete, and sidebar chrome */
-      --sidebar-width: 360px;
+      --sidebar-channel-width: 22.5rem;
+      --sidebar-width: calc(var(--sidebar-channel-width) + var(--workspace-rail-width));
     }
   }
 }

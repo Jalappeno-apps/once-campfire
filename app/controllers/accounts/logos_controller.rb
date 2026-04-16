@@ -2,7 +2,10 @@ class Accounts::LogosController < ApplicationController
   include ActiveStorage::Streaming, ActionView::Helpers::AssetUrlHelper
 
   allow_unauthenticated_access only: :show
-  before_action :ensure_can_administer, only: :destroy
+  # Skipping `require_authentication` skipped session restore; image requests had no Current.account.
+  prepend_before_action :restore_authentication, only: :show
+  before_action :prepare_sign_in_branding_for_logo_request, only: :show
+  before_action :ensure_workspace_administrator, only: :destroy
 
   def show
     if stale?(etag: Current.account)

@@ -23,7 +23,7 @@ class Messages::BoostsController < ApplicationController
 
   private
     def set_message
-      @message = Current.user.reachable_messages.find(params[:message_id])
+      @message = Current.user.reachable_messages.joins(:room).where(rooms: { account_id: Current.account.id }).find(params[:message_id])
     end
 
     def boost_params

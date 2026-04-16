@@ -1,0 +1,46 @@
+<% @page_title = "Join workspace" %>
+<% @body_class = "signup" %>
+
+<% content_for :nav do %>
+  <div class="flex-item-justify-end">
+    <%= link_to root_path, class: "btn flex-item-justify-end", aria: { label: "Back to Campfire" } do %>
+      <%= image_tag "login-keys.svg", aria: { hidden: "true" } %>
+      <span class="for-screen-reader">Back to Campfire</span>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="center join-workspace">
+  <section class="nametag u-relative">
+    <div class="flex justify-center align-center pad-block">
+      <%= image_tag "lanyard.svg", class: "nametag__lanyard", aria: { hidden: "true" } %>
+    </div>
+
+    <div class="nametag__inner join-workspace__inner flex flex-column gap">
+      <div class="join-workspace__header flex flex-column align-center gap">
+        <div class="join-workspace__title-line flex align-center justify-center gap flex-wrap">
+          <%= account_logo_tag %>
+          <strong class="txt-x-large"><%= Current.invite_account.name %></strong>
+        </div>
+
+        <p class="join-workspace__identity txt-subtle margin-none txt-align-center">
+          Signed in as <strong><%= Current.user.name %></strong>
+        </p>
+
+        <p class="join-workspace__hint txt-small txt-subtle margin-none txt-align-center">
+          You'll join this workspace as a member. Switch workspaces anytime from the sidebar menu.
+        </p>
+      </div>
+
+      <%= button_to join_path(params[:join_code]),
+            method: :post,
+            class: "btn btn--reversed txt-large join-workspace__btn",
+            form: { class: "join-workspace__form" } do %>
+        <%= image_tag "check.svg", aria: { hidden: "true" }, size: 20 %>
+        <span>Join workspace</span>
+      <% end %>
+    </div>
+  </section>
+</div>
+
+<%= render "accounts/help_contact" %>

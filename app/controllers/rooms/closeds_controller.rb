@@ -12,12 +12,12 @@ class Rooms::ClosedsController < RoomsController
   end
 
   def new
-    @room  = Rooms::Closed.new(name: DEFAULT_ROOM_NAME)
-    @users = User.active.ordered
+    @room  = Rooms::Closed.new(name: DEFAULT_ROOM_NAME, account: Current.account)
+    @users = Current.account.users.active.ordered
   end
 
   def create
-    room = Rooms::Closed.create_for(room_params, users: grantees)
+    room = Rooms::Closed.create_for(room_params.merge(account: Current.account), users: grantees)
 
     broadcast_create_room(room)
     redirect_to room_url(room)
@@ -25,7 +25,7 @@ class Rooms::ClosedsController < RoomsController
 
   def edit
     selected_user_ids = @room.users.pluck(:id)
-    @selected_users, @unselected_users = User.active.ordered.partition { |user| selected_user_ids.include?(user.id) }
+    @selected_users, @unselected_users = Current.account.users.active.ordered.partition { |user| selected_user_ids.include?(user.id) }
   end
 
   def update
@@ -56,13 +56,13 @@ class Rooms::ClosedsController < RoomsController
 
     def broadcast_create_room(room)
       each_user_and_html_for(room) do |user, html|
-        broadcast_prepend_to user, :rooms, target: room_list_target(room), html: html
+        broadcast_prepend_to [ Current.account, user ], :rooms, target: room_list_target(room), html: html
       end
     end
 
     def broadcast_update_room
       each_user_and_html_for(@room) do |user, html|
-        broadcast_replace_to user, :rooms, target: [ @room, :list ], html: html
+        broadcast_replace_to [ Current.account, user ], :rooms, target: [ @room, :list ], html: html
       end
     end
 

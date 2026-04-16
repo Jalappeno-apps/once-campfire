@@ -1,4 +1,18 @@
 module ApplicationHelper
+  def workspace_initials(name)
+    parts = name.to_s.split(/\s+/).map { |w| w[0] }.compact_blank
+    raw = parts.first(2).join.presence || name.to_s[0..1].to_s
+    raw.present? ? raw.upcase : "?"
+  end
+
+  def workspace_administrator?
+    Current.user&.workspace_administrator?(Current.account)
+  end
+
+  def workspace_accounts_for_nav
+    @workspace_accounts_for_nav ||= Current.user&.accounts&.order(:name)&.with_attached_logo&.load || []
+  end
+
   def page_title_tag
     tag.title @page_title || "Campfire"
   end

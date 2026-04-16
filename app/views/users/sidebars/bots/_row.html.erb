@@ -1,4 +1,4 @@
-<% chat_room = @sidebar_bot_chat_rooms[bot.id] || Rooms::Direct.find_or_create_for([ Current.user, bot ]) %>
+<% chat_room = @sidebar_bot_chat_rooms[bot.id] || Rooms::Direct.find_or_create_for([ Current.user, bot ], account: Current.account) %>
 
 <%= link_to room_path(chat_room),
       class: "sidebar-row align-center gap btn txt-nowrap sidebar-bot",

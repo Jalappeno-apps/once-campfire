@@ -1,0 +1,24 @@
+david_signal:
+  user: david
+  account: signal
+  role: 1
+
+jason_signal:
+  user: jason
+  account: signal
+  role: 1
+
+jz_signal:
+  user: jz
+  account: signal
+  role: 0
+
+kevin_signal:
+  user: kevin
+  account: signal
+  role: 0
+
+bender_signal:
+  user: bender
+  account: signal
+  role: 0

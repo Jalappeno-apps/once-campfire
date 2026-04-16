@@ -11,9 +11,16 @@ module User::Bot
     def create_bot!(attributes)
       bot_token = generate_bot_token
       webhook_url = attributes.delete(:webhook_url)
+      account = attributes.delete(:account) || Current.account
 
-      User.create!(**attributes, bot_token: bot_token, role: :bot).tap do |user|
-        user.create_webhook!(url: webhook_url) if webhook_url
+      user = User.new(**attributes, bot_token: bot_token, role: :bot)
+      user.provisioning_account = account
+      user.save!
+
+      AccountMembership.create!(user: user, account: account, role: :member)
+
+      user.tap do |u|
+        u.create_webhook!(url: webhook_url) if webhook_url
       end
     end
 

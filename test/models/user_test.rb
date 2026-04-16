@@ -32,6 +32,10 @@ class UserTest < ActiveSupport::TestCase
 
   private
     def create_new_user
-      User.create!(name: "User", email_address: "user@example.com", password: "secret123456")
+      account = accounts(:signal)
+      user = User.new(name: "User", email_address: "user@example.com", password: "secret123456")
+      user.provisioning_account = account
+      user.save!
+      AccountMembership.create!(user: user, account: account, role: :member)
     end
 end

@@ -10,18 +10,32 @@ const VISIBILITY_CHANGE_DELAY = 5000 // 5 seconds
 
 export default class extends Controller {
   async connect() {
+    this.disconnected = false
+
     this.channel = await cable.subscribeTo({ channel: "PresenceChannel", room_id: Current.room.id }, {
       connected: this.#websocketConnected,
       disconnected: this.#websocketDisconnected
     })
 
+    if (this.disconnected) {
+      this.channel?.unsubscribe()
+      return
+    }
+
     this.wasVisible = true
 
     await nextFrame()
+    if (this.disconnected) {
+      this.channel?.unsubscribe()
+      return
+    }
+
     this.dispatch("present", { detail: { roomId: Current.room.id } })
   }
 
   disconnect() {
+    this.disconnected = true
+    this.connected = false
     this.#stopRefreshTimer()
     this.channel?.unsubscribe()
   }
@@ -35,6 +49,7 @@ export default class extends Controller {
   }
 
   #websocketConnected = () => {
+    if (this.disconnected) return
     this.connected = true
     this.#startRefreshTimer()
   }
@@ -47,8 +62,10 @@ export default class extends Controller {
   #visible = async () => {
     await delay(VISIBILITY_CHANGE_DELAY)
 
-    if (this.connected && this.#isVisible && !this.wasVisible) {
-      this.channel.send({ action: "present" })
+    if (this.disconnected || !this.connected || !this.channel) return
+
+    if (this.#isVisible && !this.wasVisible) {
+      this.#sendAction("present")
       this.#startRefreshTimer()
       this.wasVisible = true
     }
@@ -57,9 +74,11 @@ export default class extends Controller {
   #hidden = async () => {
     await delay(VISIBILITY_CHANGE_DELAY)
 
-    if (this.connected && this.wasVisible && !this.#isVisible) {
+    if (this.disconnected || !this.connected || !this.channel) return
+
+    if (this.wasVisible && !this.#isVisible) {
       this.#stopRefreshTimer()
-      this.channel.send({ action: "absent" })
+      this.#sendAction("absent")
       this.wasVisible = false
     }
   }
@@ -74,7 +93,13 @@ export default class extends Controller {
   }
 
   #refresh = () => {
-    this.channel.send({ action: "refresh" })
+    if (this.disconnected || !this.connected || !this.channel) return
+    this.#sendAction("refresh")
+  }
+
+  #sendAction(action) {
+    if (this.disconnected || !this.channel) return
+    this.channel.send({ action })
   }
 
   get #isVisible() {

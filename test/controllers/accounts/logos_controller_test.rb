@@ -23,6 +23,18 @@ class Accounts::LogosControllerTest < ActionDispatch::IntegrationTest
     assert_valid_png_response size: 512
   end
 
+  test "show returns workspace image when session restored (not stock fallback)" do
+    get account_logo_url
+    stock_body = @response.body
+
+    accounts(:signal).update! logo: fixture_file_upload("moon.jpg", "image/jpeg")
+    get account_logo_url
+    custom_body = @response.body
+
+    assert_not_equal stock_body.bytesize, 0
+    assert_not_equal custom_body, stock_body
+  end
+
   test "show custom small size" do
     accounts(:signal).update! logo: fixture_file_upload("moon.jpg", "image/jpeg")
 

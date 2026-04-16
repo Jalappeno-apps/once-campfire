@@ -1,5 +1,5 @@
 class Accounts::CustomStylesController < ApplicationController
-  before_action :ensure_can_administer, :set_account
+  before_action :ensure_workspace_administrator, :set_account
 
   def edit
   end

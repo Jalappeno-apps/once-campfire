@@ -16,9 +16,9 @@ class Rooms::ClosedsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create" do
-    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 1 do
-    assert_turbo_stream_broadcasts [ users(:kevin), :rooms ], count: 1 do
-    assert_turbo_stream_broadcasts [ users(:jason), :rooms ], count: 1 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), users(:david), :rooms ], count: 1 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), users(:kevin), :rooms ], count: 1 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), users(:jason), :rooms ], count: 1 do
       post rooms_closeds_url, params: { room: { name: "My New Room" }, user_ids: [ users(:david).id, users(:kevin).id, users(:jason).id ] }
     end
     end
@@ -58,7 +58,7 @@ class Rooms::ClosedsControllerTest < ActionDispatch::IntegrationTest
   test "only admins or creators can update" do
     sign_in :jz
 
-    assert_turbo_stream_broadcasts :rooms, count: 0 do
+    assert_turbo_stream_broadcasts [ accounts(:signal), :rooms ], count: 0 do
       put rooms_closed_url(rooms(:designers)), params: { room: { name: "New Name" } }
     end
 

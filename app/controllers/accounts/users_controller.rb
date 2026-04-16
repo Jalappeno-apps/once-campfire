@@ -1,12 +1,14 @@
 class Accounts::UsersController < ApplicationController
-  before_action :ensure_can_administer, :set_user, only: %i[ update destroy ]
+  before_action :ensure_workspace_administrator, :set_user, only: %i[ update destroy ]
 
   def index
-    set_page_and_extract_portion_from User.active.ordered.without_bots, per_page: 500
+    set_page_and_extract_portion_from Current.account.users.active.ordered.without_bots, per_page: 500
   end
 
   def update
-    @user.update(role_params)
+    membership = @user.account_memberships.find_by!(account: Current.account)
+    role = params.require(:user)[:role].presence_in(%w[ member administrator ]) || "member"
+    membership.update!(role: role)
     redirect_to edit_account_url
   end
 
@@ -17,10 +19,6 @@ class Accounts::UsersController < ApplicationController
 
   private
     def set_user
-      @user = User.active.find(params[:user_id] || params[:id])
-    end
-
-    def role_params
-      { role: params.require(:user)[:role].presence_in(%w[ member administrator ]) || "member" }
+      @user = Current.account.users.active.find(params[:user_id] || params[:id])
     end
 end

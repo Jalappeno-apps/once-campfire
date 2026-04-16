@@ -1,6 +1,11 @@
 class User < ApplicationRecord
   include Avatar, Bannable, Bot, Mentionable, Role, Transferable
 
+  attr_accessor :provisioning_account
+
+  has_many :account_memberships, dependent: :delete_all
+  has_many :accounts, through: :account_memberships
+
   has_many :memberships, dependent: :delete_all
   has_many :rooms, through: :memberships
 
@@ -24,6 +29,34 @@ class User < ApplicationRecord
 
   scope :ordered, -> { order("LOWER(name)") }
   scope :filtered_by, ->(query) { where("name like ?", "%#{query}%") }
+
+  def rooms_in_account(account)
+    return Room.none unless account
+    rooms.where(account_id: account.id)
+  end
+
+  def workspace_administrator?(account)
+    account_memberships.find_by(account: account)&.administrator?
+  end
+
+  # Adds room memberships for every open channel in the workspace (idempotent).
+  def grant_open_room_memberships_for_account(account)
+    return unless account
+    return if bot?
+
+    open_room_ids = Room.opens.where(account_id: account.id).pluck(:id)
+    return if open_room_ids.empty?
+
+    have = memberships.where(room_id: open_room_ids).pluck(:room_id)
+    missing_ids = open_room_ids - have
+    return if missing_ids.empty?
+
+    now = Time.current
+    rows = missing_ids.map do |room_id|
+      { room_id: room_id, user_id: id, involvement: "mentions", connections: 0, created_at: now, updated_at: now }
+    end
+    Membership.insert_all(rows)
+  end
 
   def initials
     name.scan(/\b\w/).join
@@ -53,7 +86,8 @@ class User < ApplicationRecord
 
   private
     def grant_membership_to_open_rooms
-      Membership.insert_all(Rooms::Open.pluck(:id).collect { |room_id| { room_id: room_id, user_id: id } })
+      account = provisioning_account || account_memberships.first&.account
+      grant_open_room_memberships_for_account(account)
     end
 
     def deactived_email_address

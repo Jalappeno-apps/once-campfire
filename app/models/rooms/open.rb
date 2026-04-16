@@ -5,7 +5,7 @@ class Rooms::Open < Room
   private
     def grant_access_to_all_users
       if type_previously_changed?(to: "Rooms::Open")
-        memberships.grant_to(User.active.without_bots)
+        memberships.grant_to(account.users.active.without_bots)
       end
     end
 end
