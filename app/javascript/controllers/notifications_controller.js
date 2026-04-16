@@ -11,6 +11,14 @@ export default class extends Controller {
 
   async connect() {
     if (!pageIsTurboPreview()) {
+      if (this.#isNativeApp) {
+        // Native wrapper handles notifications separately; skip web-push UX.
+        this.#endFirstRun()
+        onNextEventLoopTick(() => this.dispatch("ready"))
+        window.notificationsPreviouslyReady = true
+        return
+      }
+
       if (window.notificationsPreviouslyReady) {
         onNextEventLoopTick(() => this.dispatch("ready"))
       } else {
@@ -29,6 +37,11 @@ export default class extends Controller {
   }
 
   async attemptToSubscribe() {
+    if (this.#isNativeApp) {
+      this.#endFirstRun()
+      return
+    }
+
     if (this.#allowed) {
       const registration = await this.#serviceWorkerRegistration || await this.#registerServiceWorker()
 
@@ -161,5 +174,9 @@ export default class extends Controller {
 
   get #isPWA() {
     return window.matchMedia("(display-mode: standalone)").matches
+  }
+
+  get #isNativeApp() {
+    return window.__CAMPFIRE_NATIVE_APP__ === true
   }
 }

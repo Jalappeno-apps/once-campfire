@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONTAINER="${CAMPFIRE_CONTAINER:-campfire}"
+OUT_DIR="${BACKUP_DIR:-./backups}"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+ARCHIVE_NAME="campfire-storage-${TIMESTAMP}.tar.gz"
+TEMP_PATH="/tmp/${ARCHIVE_NAME}"
+
+mkdir -p "${OUT_DIR}"
+
+echo "Preparing SQLite snapshot inside container '${CONTAINER}'..."
+docker exec "${CONTAINER}" ./script/admin/prepare-backup
+
+echo "Creating storage archive inside container..."
+docker exec "${CONTAINER}" tar -C /rails -czf "${TEMP_PATH}" storage
+
+echo "Copying archive to host: ${OUT_DIR}/${ARCHIVE_NAME}"
+docker cp "${CONTAINER}:${TEMP_PATH}" "${OUT_DIR}/${ARCHIVE_NAME}"
+
+echo "Cleaning up temporary archive in container..."
+docker exec "${CONTAINER}" rm -f "${TEMP_PATH}"
+
+echo "Backup complete: ${OUT_DIR}/${ARCHIVE_NAME}"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2025_12_12_154340) do
+ActiveRecord::Schema[8.2].define(version: 2026_04_16_095000) do
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "custom_styles"
@@ -104,6 +104,19 @@ ActiveRecord::Schema[8.2].define(version: 2025_12_12_154340) do
     t.index ["room_id"], name: "index_messages_on_room_id"
   end
 
+  create_table "mobile_devices", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "device_name"
+    t.boolean "enabled", default: true, null: false
+    t.string "expo_push_token", null: false
+    t.datetime "last_seen_at"
+    t.string "platform", default: "unknown", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.index ["expo_push_token"], name: "index_mobile_devices_on_expo_push_token", unique: true
+    t.index ["user_id"], name: "index_mobile_devices_on_user_id"
+  end
+
   create_table "push_subscriptions", force: :cascade do |t|
     t.string "auth_key"
     t.datetime "created_at", null: false
@@ -172,6 +185,7 @@ ActiveRecord::Schema[8.2].define(version: 2025_12_12_154340) do
   add_foreign_key "boosts", "messages"
   add_foreign_key "messages", "rooms"
   add_foreign_key "messages", "users", column: "creator_id"
+  add_foreign_key "mobile_devices", "users"
   add_foreign_key "push_subscriptions", "users"
   add_foreign_key "searches", "users"
   add_foreign_key "sessions", "users"

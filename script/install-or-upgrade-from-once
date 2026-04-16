@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_DIR="${INSTALL_DIR:-/opt/once-campfire}"
+APP_DIR="${APP_DIR:-${INSTALL_DIR}/app}"
+REPO_URL="${REPO_URL:-https://github.com/Jalappeno-apps/once-campfire.git}"
+REPO_REF="${REPO_REF:-main}"
+EXISTING_CONTAINER="${EXISTING_CONTAINER:-campfire}"
+CANARY_HTTP_PORT="${CANARY_HTTP_PORT:-8080}"
+CANARY_HTTPS_PORT="${CANARY_HTTPS_PORT:-8443}"
+TARGET_IMAGE="${TARGET_IMAGE:-}"
+EDITOR_CMD="${EDITOR:-vi}"
+AUTO_DEPLOY="${AUTO_DEPLOY:-false}"
+
+info() { echo "==> $*"; }
+warn() { echo "WARN: $*" >&2; }
+die() { echo "ERROR: $*" >&2; exit 1; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
+}
+
+detect_compose() {
+  if docker compose version >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker compose)
+    return
+  fi
+
+  if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_CMD=(docker-compose)
+    return
+  fi
+
+  die "Neither 'docker compose' nor 'docker-compose' is available."
+}
+
+container_exists() {
+  docker container inspect "$1" >/dev/null 2>&1
+}
+
+container_running() {
+  [ "$(docker inspect --format '{{.State.Running}}' "$1" 2>/dev/null || echo false)" = "true" ]
+}
+
+upsert_env() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  local escaped
+
+  [ -n "$value" ] || return 0
+  escaped="$(printf '%s' "$value" | sed 's/[&|\\]/\\&/g')"
+
+  if grep -q "^${key}=" "$file"; then
+    sed -i.bak "s|^${key}=.*|${key}=${escaped}|" "$file"
+    rm -f "${file}.bak"
+  else
+    printf '%s=%s\n' "$key" "$value" >> "$file"
+  fi
+}
+
+env_value() {
+  local file="$1"
+  local key="$2"
+  awk -F= -v k="$key" '$1 == k { sub(/^[^=]*=/, "", $0); print; exit }' "$file"
+}
+
+confirm() {
+  local prompt="$1"
+  local answer
+  printf "%s [y/N] " "$prompt"
+  read -r answer
+  case "${answer}" in
+    y|Y|yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+seed_storage_from_backup() {
+  local backup_storage_dir="$1"
+  local target_storage_dir="$2"
+
+  mkdir -p "$target_storage_dir"
+  if [ -n "$(ls -A "$target_storage_dir" 2>/dev/null || true)" ]; then
+    info "Storage directory already contains files; skipping copy."
+    return
+  fi
+
+  if [ -d "$backup_storage_dir" ]; then
+    info "Seeding storage from backup into ${target_storage_dir}"
+    cp -a "${backup_storage_dir}/." "${target_storage_dir}/"
+  else
+    warn "No backup storage directory found at ${backup_storage_dir}; skipping seed."
+  fi
+}
+
+main() {
+  require_cmd docker
+  require_cmd git
+  detect_compose
+
+  local timestamp backup_root existing_env_file env_file compose_canary compose_bind
+  local backup_storage_dir missing=0
+
+  timestamp="$(date +%Y%m%d-%H%M%S)"
+  backup_root="${INSTALL_DIR}/backups/${timestamp}"
+  existing_env_file="${backup_root}/existing-container.env"
+  backup_storage_dir="${backup_root}/storage"
+
+  mkdir -p "$INSTALL_DIR"
+
+  if [ -d "${APP_DIR}/.git" ]; then
+    info "Updating existing repo in ${APP_DIR}"
+    git -C "$APP_DIR" fetch --prune origin
+    git -C "$APP_DIR" checkout "$REPO_REF"
+    git -C "$APP_DIR" pull --ff-only origin "$REPO_REF"
+  else
+    info "Cloning ${REPO_URL}#${REPO_REF} into ${APP_DIR}"
+    git clone --depth 1 --branch "$REPO_REF" "$REPO_URL" "$APP_DIR"
+  fi
+
+  [ -f "${APP_DIR}/docker-compose.prod.yml" ] || die "Missing docker-compose.prod.yml in ${APP_DIR}"
+  [ -f "${APP_DIR}/.env.production.example" ] || die "Missing .env.production.example in ${APP_DIR}"
+
+  if container_exists "$EXISTING_CONTAINER"; then
+    info "Found existing container '${EXISTING_CONTAINER}', capturing backup + env."
+    mkdir -p "$backup_root"
+    docker inspect "$EXISTING_CONTAINER" > "${backup_root}/inspect.json"
+    docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$EXISTING_CONTAINER" > "$existing_env_file"
+
+    if container_running "$EXISTING_CONTAINER"; then
+      docker exec "$EXISTING_CONTAINER" ./script/admin/prepare-backup || true
+    fi
+
+    docker cp "${EXISTING_CONTAINER}:/rails/storage" "$backup_storage_dir"
+  else
+    warn "No existing '${EXISTING_CONTAINER}' container found; proceeding as fresh install."
+    mkdir -p "$backup_root"
+    : > "$existing_env_file"
+  fi
+
+  env_file="${APP_DIR}/.env.production"
+  if [ ! -f "$env_file" ]; then
+    info "Creating ${env_file} from template"
+    cp "${APP_DIR}/.env.production.example" "$env_file"
+    chmod 600 "$env_file"
+  else
+    info "Using existing ${env_file}"
+  fi
+
+  # Prefill values from existing container env when available.
+  if [ -s "$existing_env_file" ]; then
+    upsert_env "$env_file" "SECRET_KEY_BASE" "$(awk -F= '$1=="SECRET_KEY_BASE"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+    upsert_env "$env_file" "VAPID_PUBLIC_KEY" "$(awk -F= '$1=="VAPID_PUBLIC_KEY"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+    upsert_env "$env_file" "VAPID_PRIVATE_KEY" "$(awk -F= '$1=="VAPID_PRIVATE_KEY"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+    upsert_env "$env_file" "SENTRY_DSN" "$(awk -F= '$1=="SENTRY_DSN"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+    upsert_env "$env_file" "DISABLE_SSL" "$(awk -F= '$1=="DISABLE_SSL"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+
+    # Some older setups use TLS_DOMAIN; map it to SSL_DOMAIN.
+    upsert_env "$env_file" "SSL_DOMAIN" "$(awk -F= '$1=="SSL_DOMAIN"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+    upsert_env "$env_file" "SSL_DOMAIN" "$(awk -F= '$1=="TLS_DOMAIN"{sub(/^[^=]*=/,"");print;exit}' "$existing_env_file")"
+  fi
+
+  if [ -n "$TARGET_IMAGE" ]; then
+    upsert_env "$env_file" "CAMPFIRE_IMAGE" "$TARGET_IMAGE"
+  fi
+
+  # Use host bind mount so migrated data is explicit and easy to back up.
+  mkdir -p "${INSTALL_DIR}/storage"
+  seed_storage_from_backup "$backup_storage_dir" "${INSTALL_DIR}/storage"
+
+  compose_bind="${APP_DIR}/docker-compose.bind-storage.yml"
+  cat > "$compose_bind" <<EOF
+services:
+  campfire:
+    volumes:
+      - ${INSTALL_DIR}/storage:/rails/storage
+EOF
+
+  compose_canary="${APP_DIR}/docker-compose.canary.yml"
+  cat > "$compose_canary" <<EOF
+services:
+  campfire:
+    container_name: campfire-canary
+    ports:
+      - "${CANARY_HTTP_PORT}:80"
+      - "${CANARY_HTTPS_PORT}:443"
+EOF
+
+  info "Opening ${env_file} for review. Fill any remaining placeholders, then save."
+  "${EDITOR_CMD}" "$env_file" || true
+
+  if [ -z "$(env_value "$env_file" "SECRET_KEY_BASE")" ] || [ "$(env_value "$env_file" "SECRET_KEY_BASE")" = "replace_with_long_random_secret" ]; then
+    warn "SECRET_KEY_BASE is missing in ${env_file}"
+    missing=1
+  fi
+
+  if [ -z "$(env_value "$env_file" "SSL_DOMAIN")" ] && [ -z "$(env_value "$env_file" "DISABLE_SSL")" ]; then
+    warn "Set either SSL_DOMAIN or DISABLE_SSL=true in ${env_file}"
+    missing=1
+  fi
+
+  if [ "$missing" -eq 1 ]; then
+    die "Please fix ${env_file} and re-run."
+  fi
+
+  info "Starting canary deployment on ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT}"
+  (
+    cd "$APP_DIR"
+    "${COMPOSE_CMD[@]}" \
+      -f docker-compose.prod.yml \
+      -f docker-compose.bind-storage.yml \
+      -f docker-compose.canary.yml \
+      --env-file .env.production \
+      pull
+
+    "${COMPOSE_CMD[@]}" \
+      -f docker-compose.prod.yml \
+      -f docker-compose.bind-storage.yml \
+      -f docker-compose.canary.yml \
+      --env-file .env.production \
+      up -d
+  )
+
+  echo
+  info "Canary is up. Validate app on:"
+  echo "  http://<server-ip>:${CANARY_HTTP_PORT}"
+  echo
+  info "When ready to cut over from once-managed app:"
+  cat <<'EOF'
+  once stop
+  cd /opt/once-campfire/app
+  docker compose \
+    -f docker-compose.prod.yml \
+    -f docker-compose.bind-storage.yml \
+    --env-file .env.production \
+    up -d
+EOF
+  echo
+  info "Rollback command:"
+  cat <<'EOF'
+  cd /opt/once-campfire/app
+  docker compose \
+    -f docker-compose.prod.yml \
+    -f docker-compose.bind-storage.yml \
+    --env-file .env.production \
+    down
+  once start
+EOF
+
+  if [ "$AUTO_DEPLOY" = "true" ]; then
+    if confirm "AUTO_DEPLOY=true set. Cut over now (stop once, start new stack on 80/443)?"; then
+      once stop || true
+      (
+        cd "$APP_DIR"
+        "${COMPOSE_CMD[@]}" \
+          -f docker-compose.prod.yml \
+          -f docker-compose.bind-storage.yml \
+          --env-file .env.production \
+          up -d
+      )
+      info "Cutover complete."
+    else
+      info "Cutover skipped."
+    fi
+  fi
+}
+
+main "$@"

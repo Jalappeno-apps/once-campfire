@@ -43,6 +43,18 @@ For example:
       --env TLS_DOMAIN=chat.example.com \
       campfire
 
+## Operating a custom fork
+
+If you are running a customized fork and still want a safe upgrade path from
+upstream, see `docs/FORK_DEPLOYMENT_RUNBOOK.md`.
+
+It includes:
+
+- fork/upstream Git workflow
+- backup before deploy
+- rollback process with tagged images
+- guidance for adding mobile push and future calls/video with minimal merge pain
+
 ## Running in development
 
     bin/setup

@@ -1,0 +1,15 @@
+services:
+  campfire:
+    image: ${CAMPFIRE_IMAGE:-ghcr.io/jalappeno-apps/once-campfire:main}
+    container_name: campfire
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env.production
+    volumes:
+      - campfire-storage:/rails/storage
+
+volumes:
+  campfire-storage:

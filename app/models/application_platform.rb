@@ -27,6 +27,10 @@ class ApplicationPlatform < PlatformAgent
     user_agent.browser.match? /Edg/
   end
 
+  def native_app?
+    match?(/CampfireMobileApp/i)
+  end
+
   def apple_messages?
     # Apple Messages pretends to be Facebook and Twitter bots via spoofed user agent.
     # We want to avoid showing "Unsupported browser" message when a Campfire link

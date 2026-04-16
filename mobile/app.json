@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Campfire",
+    "slug": "campfire-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./logo.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jalappeno.campfiremobile"
+    },
+    "android": {
+      "package": "com.jalappeno.campfiremobile",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./logo.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f518a559-c8bd-4bfb-a8d1-bd0cb481d54a"
+      }
+    },
+    "owner": "archetype2142"
+  }
+}

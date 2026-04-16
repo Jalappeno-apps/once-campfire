@@ -107,6 +107,10 @@
 
   <%= render "users/profiles/transfer", user: @user %>
 
+  <% if platform.native_app? %>
+    <%= render "users/profiles/native_app_settings" %>
+  <% end %>
+
   <% if Rails.env.development? %>
     <fieldset>
       <legend>

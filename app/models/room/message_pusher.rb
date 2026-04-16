@@ -9,6 +9,8 @@ class Room::MessagePusher
     build_payload.tap do |payload|
       push_to_users_involved_in_everything(payload)
       push_to_users_involved_in_mentions(payload)
+      push_to_mobile_users_involved_in_everything(payload)
+      push_to_mobile_users_involved_in_mentions(payload)
     end
   end
 
@@ -45,6 +47,14 @@ class Room::MessagePusher
       enqueue_payload_for_delivery payload, push_subscriptions_for_mentionable_users(message.mentionees)
     end
 
+    def push_to_mobile_users_involved_in_everything(payload)
+      enqueue_mobile_payload_for_delivery payload, mobile_devices_for_users_involved_in_everything
+    end
+
+    def push_to_mobile_users_involved_in_mentions(payload)
+      enqueue_mobile_payload_for_delivery payload, mobile_devices_for_mentionable_users(message.mentionees)
+    end
+
     def push_subscriptions_for_users_involved_in_everything
       relevant_subscriptions.merge(Membership.involved_in_everything)
     end
@@ -53,13 +63,32 @@ class Room::MessagePusher
       relevant_subscriptions.merge(Membership.involved_in_mentions).where(user_id: mentionees.ids)
     end
 
+    def mobile_devices_for_users_involved_in_everything
+      relevant_mobile_devices.merge(Membership.involved_in_everything)
+    end
+
+    def mobile_devices_for_mentionable_users(mentionees)
+      relevant_mobile_devices.merge(Membership.involved_in_mentions).where(user_id: mentionees.ids)
+    end
+
     def relevant_subscriptions
       Push::Subscription
         .joins(user: :memberships)
         .merge(Membership.visible.disconnected.where(room: room).where.not(user: message.creator))
     end
 
+    def relevant_mobile_devices
+      Mobile::Device
+        .enabled
+        .joins(user: :memberships)
+        .merge(Membership.visible.where(room: room).where.not(user: message.creator))
+    end
+
     def enqueue_payload_for_delivery(payload, subscriptions)
       Rails.configuration.x.web_push_pool.queue(payload, subscriptions)
+    end
+
+    def enqueue_mobile_payload_for_delivery(payload, devices)
+      Mobile::Push::DeliveryClient.deliver(payload:, devices:)
     end
 end

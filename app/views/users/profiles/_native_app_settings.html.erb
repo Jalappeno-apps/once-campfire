@@ -1,0 +1,17 @@
+<fieldset data-controller="native-app">
+  <legend>
+    <%= image_tag "mobile-phone.svg", aria: { hidden: "true" }, size: 36, class: "colorize--black" %>
+  </legend>
+
+  <div class="flex flex-column gap">
+    <label>App settings</label>
+
+    <button class="btn txt-small center" data-action="native-app#openSettings">
+      Open native app settings
+    </button>
+
+    <p class="txt-small color-secondary margin-none">
+      Change server domain and mobile notification options.
+    </p>
+  </div>
+</fieldset>

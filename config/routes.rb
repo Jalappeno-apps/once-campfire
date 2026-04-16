@@ -85,6 +85,15 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :api do
+    namespace :mobile do
+      resource :branding, only: :show
+      resource :session, only: :show
+      resources :notifications, only: :index
+      resources :devices, only: %i[ index create ]
+    end
+  end
+
   resources :searches, only: %i[ index create ] do
     delete :clear, on: :collection
   end

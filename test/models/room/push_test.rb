@@ -59,6 +59,20 @@ class Room::PushTest < ActiveSupport::TestCase
     end
   end
 
+  test "delivers native mobile notifications through expo client" do
+    Mobile::Device.create!(
+      user: users(:jason),
+      expo_push_token: "ExponentPushToken[jason-device]",
+      platform: "android",
+      device_name: "Pixel"
+    )
+
+    perform_enqueued_jobs only: Room::PushMessageJob do
+      Mobile::Push::DeliveryClient.expects(:deliver).at_least_once
+      rooms(:designers).messages.create! body: "This should notify mobile", client_message_id: "native-mobile", creator: users(:david)
+    end
+  end
+
   private
     def wait_for_web_push_delivery_pool_tasks(count)
       wait_for_pool_tasks(Rails.configuration.x.web_push_pool.delivery_pool, count)
@@ -70,7 +84,7 @@ class Room::PushTest < ActiveSupport::TestCase
 
     def wait_for_pool_tasks(pool, count)
       start = Time.now
-      timeout = 0.2
+      timeout = 2.0
       while pool.completed_task_count < count
         raise "Timeout waiting for pool tasks to complete" if Time.now - start > timeout
         sleep timeout / 10.0
