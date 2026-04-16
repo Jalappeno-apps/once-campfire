@@ -24,4 +24,16 @@ class Calls::InviteTest < ActiveSupport::TestCase
     assert_equal "abc123", Calls::Invite.token_from_path("/c/abc123\u00A0")
     assert_equal "abc123", Calls::Invite.token_from_path("/calls/abc123\u00A0")
   end
+
+  test "rejects untrusted destination host" do
+    invite = Calls::Invite.new(
+      room: rooms(:designers),
+      creator: users(:david),
+      destination_url: "https://example.com/room-123",
+      expires_at: 1.hour.from_now
+    )
+
+    assert_not invite.valid?
+    assert_includes invite.errors[:destination_url], "must use a trusted call host"
+  end
 end

@@ -6,7 +6,10 @@ module Calls
     def show
       token = Calls::Invite.normalize_token(params[:token])
       invite = Calls::Invite.active.find_by!(token: token)
-      redirect_to invite.destination_url, allow_other_host: true
+      destination_url = Calls::Invite.trusted_destination_url(invite.destination_url)
+      return render_not_found unless destination_url
+
+      head :found, location: destination_url
     end
 
     private

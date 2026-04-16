@@ -62,4 +62,19 @@ class Calls::InvitesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to invite.destination_url
   end
+
+  test "returns not found for untrusted destination host" do
+    invite = Calls::Invite.new(
+      room: rooms(:designers),
+      creator: users(:david),
+      token: "evilhost1",
+      destination_url: "https://example.com/room-123?jwt=abc",
+      expires_at: 30.minutes.from_now
+    )
+    invite.save!(validate: false)
+
+    get call_invite_url(token: invite.token)
+
+    assert_response :not_found
+  end
 end
