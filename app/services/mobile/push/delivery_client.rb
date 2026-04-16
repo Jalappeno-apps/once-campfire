@@ -20,8 +20,9 @@ module Mobile
             return
           end
 
-          response = Net::HTTP.start(endpoint.host, endpoint.port, use_ssl: endpoint.scheme == "https") do |http|
-            request = Net::HTTP::Post.new(endpoint.request_uri, headers)
+          push_endpoint = endpoint
+          response = Net::HTTP.start(push_endpoint.host, push_endpoint.port, use_ssl: push_endpoint.scheme == "https") do |http|
+            request = Net::HTTP::Post.new(request_path(push_endpoint), headers)
             request.body = messages.to_json
             http.request(request)
           end
@@ -38,7 +39,25 @@ module Mobile
 
         private
           def endpoint
-            @endpoint ||= URI(ENV.fetch("MOBILE_PUSH_DELIVERY_URL", "https://exp.host/--/api/v2/push/send"))
+            @endpoint ||= begin
+              raw_endpoint = ENV.fetch("MOBILE_PUSH_DELIVERY_URL", "https://exp.host/--/api/v2/push/send").to_s.strip
+              normalized = raw_endpoint.match?(/\Ahttps?:\/\//i) ? raw_endpoint : "https://#{raw_endpoint}"
+              uri = URI.parse(normalized)
+
+              raise ArgumentError, "MOBILE_PUSH_DELIVERY_URL must include a host" if uri.host.blank?
+
+              # Support host-only values such as "exp.host" by filling Expo's default push path.
+              if uri.host == "exp.host" && (uri.path.blank? || uri.path == "/")
+                uri.path = "/--/api/v2/push/send"
+              end
+
+              uri
+            end
+          end
+
+          def request_path(uri)
+            path = uri.path.presence || "/"
+            uri.query.present? ? "#{path}?#{uri.query}" : path
           end
 
           def headers
