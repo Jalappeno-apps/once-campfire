@@ -94,6 +94,37 @@ seed_storage_from_backup() {
   fi
 }
 
+prepare_image() {
+  local env_file="$1"
+  local app_dir="$2"
+  local timestamp="$3"
+  local image
+  local local_image
+
+  image="$(env_value "$env_file" "CAMPFIRE_IMAGE")"
+
+  if [ -z "$image" ]; then
+    local_image="once-campfire:local-${timestamp}"
+    info "CAMPFIRE_IMAGE not set; building local image ${local_image}"
+    docker build -t "$local_image" "$app_dir"
+    upsert_env "$env_file" "CAMPFIRE_IMAGE" "$local_image"
+    return
+  fi
+
+  if docker image inspect "$image" >/dev/null 2>&1; then
+    info "Using existing local image ${image}"
+    return
+  fi
+
+  info "Pulling image ${image}"
+  if ! docker pull "$image"; then
+    local_image="once-campfire:local-${timestamp}"
+    warn "Failed to pull ${image}; building local fallback image ${local_image}"
+    docker build -t "$local_image" "$app_dir"
+    upsert_env "$env_file" "CAMPFIRE_IMAGE" "$local_image"
+  fi
+}
+
 main() {
   require_cmd docker
   require_cmd git
@@ -188,7 +219,11 @@ services:
 EOF
 
   info "Opening ${env_file} for review. Fill any remaining placeholders, then save."
-  "${EDITOR_CMD}" "$env_file" || true
+  if [ -t 0 ] && [ -t 1 ]; then
+    "${EDITOR_CMD}" "$env_file" || true
+  else
+    warn "No interactive terminal detected; edit ${env_file} manually before continuing."
+  fi
 
   if [ -z "$(env_value "$env_file" "SECRET_KEY_BASE")" ] || [ "$(env_value "$env_file" "SECRET_KEY_BASE")" = "replace_with_long_random_secret" ]; then
     warn "SECRET_KEY_BASE is missing in ${env_file}"
@@ -204,16 +239,11 @@ EOF
     die "Please fix ${env_file} and re-run."
   fi
 
+  prepare_image "$env_file" "$APP_DIR" "$timestamp"
+
   info "Starting canary deployment on ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT}"
   (
     cd "$APP_DIR"
-    "${COMPOSE_CMD[@]}" \
-      -f docker-compose.prod.yml \
-      -f docker-compose.bind-storage.yml \
-      -f docker-compose.canary.yml \
-      --env-file .env.production \
-      pull
-
     "${COMPOSE_CMD[@]}" \
       -f docker-compose.prod.yml \
       -f docker-compose.bind-storage.yml \

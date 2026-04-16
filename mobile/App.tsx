@@ -10,6 +10,7 @@ import {
   AppState,
   AppStateStatus,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -74,6 +75,13 @@ async function registerForPushTokenAsync(): Promise<string | null> {
   if (!Device.isDevice) return null;
   if (Constants.appOwnership === "expo") return null;
 
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX
+    });
+  }
+
   const existing = await Notifications.getPermissionsAsync();
   let finalStatus = existing.status;
   if (existing.status !== "granted") {
@@ -105,6 +113,7 @@ function AppContent() {
   const [showSettings, setShowSettings] = useState(false);
   const [authUserId, setAuthUserId] = useState<number | null>(null);
   const [pushToken, setPushToken] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<Notifications.PermissionStatus | "unknown">("unknown");
   const [pushRegistrationStatus, setPushRegistrationStatus] = useState("Waiting for sign-in");
   const [serverSupportsEmbeddedSettings, setServerSupportsEmbeddedSettings] = useState(false);
 
@@ -177,6 +186,36 @@ function AppContent() {
     void refreshAuthSession();
   }, [domain, refreshAuthSession]);
 
+  const ensurePushRegistration = useCallback(async () => {
+    if (!authUserId) {
+      setPushRegistrationStatus("Sign in to enable push");
+      return;
+    }
+
+    if (Constants.appOwnership === "expo") {
+      setPushRegistrationStatus("Push unavailable in Expo Go. Use development build.");
+      return;
+    }
+
+    const before = await Notifications.getPermissionsAsync();
+    setPermissionStatus(before.status);
+
+    setPushRegistrationStatus("Requesting notification permission...");
+    const token = await registerForPushTokenAsync();
+
+    const after = await Notifications.getPermissionsAsync();
+    setPermissionStatus(after.status);
+
+    if (token) {
+      setPushToken(token);
+      setPushRegistrationStatus("Token ready");
+    } else if (after.status === "denied") {
+      setPushRegistrationStatus("Permission denied in system settings");
+    } else {
+      setPushRegistrationStatus("Permission unavailable");
+    }
+  }, [authUserId]);
+
   useEffect(() => {
     if (!canPoll) return;
 
@@ -234,28 +273,12 @@ function AppContent() {
 
     if (pushToken) return;
 
-    let cancelled = false;
-
     async function ensurePushToken() {
-      setPushRegistrationStatus("Requesting notification permission...");
-      const token = await registerForPushTokenAsync();
-
-      if (cancelled) return;
-
-      if (token) {
-        setPushToken(token);
-        setPushRegistrationStatus("Token ready");
-      } else {
-        setPushRegistrationStatus("Permission denied or unavailable");
-      }
+      await ensurePushRegistration();
     }
 
     void ensurePushToken();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authUserId, pushToken]);
+  }, [authUserId, pushToken, ensurePushRegistration]);
 
   useEffect(() => {
     if (!domain || !pushToken || !authUserId) return;
@@ -438,7 +461,18 @@ function AppContent() {
           <Text style={styles.tokenText}>
             {pushToken ?? "Unavailable in Expo Go. Use a development build with EAS project id for remote push."}
           </Text>
+          <Text style={styles.helperText}>Permission status: {permissionStatus}</Text>
           <Text style={styles.helperText}>Push registration: {pushRegistrationStatus}</Text>
+          {permissionStatus !== "granted" && (
+            <TouchableOpacity style={styles.buttonSecondary} onPress={() => void ensurePushRegistration()}>
+              <Text style={styles.buttonSecondaryLabel}>Enable notifications</Text>
+            </TouchableOpacity>
+          )}
+          {permissionStatus === "denied" && (
+            <TouchableOpacity style={styles.buttonSecondary} onPress={() => void Linking.openSettings()}>
+              <Text style={styles.buttonSecondaryLabel}>Open app settings</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.helperText}>
             Later, send this token to your backend/companion push service to deliver native push.
           </Text>
