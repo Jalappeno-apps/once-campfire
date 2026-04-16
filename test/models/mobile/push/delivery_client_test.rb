@@ -86,7 +86,8 @@ class Mobile::Push::DeliveryClientTest < ActiveSupport::TestCase
         body["categoryId"] == "incoming_call" &&
         body["categoryIdentifier"] == "incoming_call" &&
         body["data"]["type"] == "incoming_call" &&
-        body["data"]["call_url"] == "https://meet.jit.si/call-room"
+        body["data"]["call_url"] == "https://meet.jit.si/call-room" &&
+        body["data"]["message_id"] == 42
     end.returns(response)
 
     Net::HTTP.expects(:start).with("exp.host", 443, use_ssl: true).yields(http)
@@ -99,7 +100,8 @@ class Mobile::Push::DeliveryClientTest < ActiveSupport::TestCase
         type: "incoming_call",
         call_url: "https://meet.jit.si/call-room",
         caller_name: "Ritwick",
-        room_name: "General"
+        room_name: "General",
+        message_id: 42
       },
       devices: Mobile::Device.where(id: device.id)
     )

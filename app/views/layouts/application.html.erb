@@ -3,7 +3,7 @@
   <head>
     <%= page_title_tag %>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, interactive-widget=overlays-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, interactive-widget=<%= platform.native_app? ? "resizes-content" : "overlays-content" %>">
     <meta name="view-transition" content="same-origin">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">

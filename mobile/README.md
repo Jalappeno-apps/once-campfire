@@ -24,6 +24,8 @@ On first launch, enter your hosted domain, for example:
 
 The app stores this as `https://chat.example.com`.
 
+To use **`http://`** (LAN, dev servers, no TLS), rebuild a **development or release client** after pulling: native projects must be regenerated so Android cleartext and iOS WebView ATS settings apply (`npx expo prebuild --clean` then `expo run:ios` / `expo run:android`, or EAS Build). Expo Go may not match these flags.
+
 ## 3) Notification behavior
 
 - App requests push permissions after sign-in and generates a device push token.

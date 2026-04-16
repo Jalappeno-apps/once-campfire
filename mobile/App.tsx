@@ -100,7 +100,54 @@ type IncomingCallPayload = {
   title: string;
   body: string;
   path: string | null;
+  messageId?: number;
 };
+
+const DISMISSED_INCOMING_CALLS_KEY = "campfire.dismissedIncomingCalls.v1";
+const DISMISSED_CALL_TTL_MS = 24 * 60 * 60 * 1000;
+
+type DismissedIncomingEntry = { key: string; until: number };
+
+function parseMessageIdFromData(data: Record<string, unknown>): number | undefined {
+  const raw = data.message_id;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string" && /^\d+$/.test(raw)) return parseInt(raw, 10);
+  return undefined;
+}
+
+function incomingCallDedupKey(callUrl: string, messageId?: number): string {
+  if (messageId != null) return `m:${messageId}`;
+  return `u:${callUrl}`;
+}
+
+async function loadDismissedIncomingKeys(): Promise<Set<string>> {
+  try {
+    const raw = await AsyncStorage.getItem(DISMISSED_INCOMING_CALLS_KEY);
+    if (!raw) return new Set();
+    const entries = JSON.parse(raw) as DismissedIncomingEntry[];
+    const now = Date.now();
+    const valid = entries.filter((e) => typeof e.key === "string" && e.until > now);
+    if (valid.length !== entries.length) {
+      await AsyncStorage.setItem(DISMISSED_INCOMING_CALLS_KEY, JSON.stringify(valid));
+    }
+    return new Set(valid.map((e) => e.key));
+  } catch {
+    return new Set();
+  }
+}
+
+async function persistDismissedIncomingKey(key: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(DISMISSED_INCOMING_CALLS_KEY);
+    const entries: DismissedIncomingEntry[] = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    const filtered = entries.filter((e) => e.until > now && e.key !== key);
+    filtered.push({ key, until: now + DISMISSED_CALL_TTL_MS });
+    await AsyncStorage.setItem(DISMISSED_INCOMING_CALLS_KEY, JSON.stringify(filtered));
+  } catch {
+    // ignore storage failures
+  }
+}
 
 function extractIncomingCallPayload(content: {
   title?: string | null;
@@ -113,11 +160,13 @@ function extractIncomingCallPayload(content: {
   if (typeof data.call_url !== "string" || !data.call_url) return null;
 
   const path = typeof data.path === "string" && data.path ? data.path : null;
+  const messageId = parseMessageIdFromData(data);
   return {
     callUrl: data.call_url,
     title: typeof content.title === "string" && content.title ? content.title : "Incoming call",
     body: typeof content.body === "string" && content.body ? content.body : "Join call",
-    path
+    path,
+    messageId
   };
 }
 
@@ -257,9 +306,28 @@ function AppContent() {
   const [webViewError, setWebViewError] = useState<string | null>(null);
   const [trustedCallHosts, setTrustedCallHosts] = useState<string[]>(["meet.jit.si"]);
   const webViewRef = useRef<WebView>(null);
+  const dismissedIncomingKeysRef = useRef<Set<string>>(new Set());
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
   const shouldShowServerButton = useMemo(() => {
     return !showSettings && (Boolean(webViewError) || isSettingsLikePath(currentWebUrl));
   }, [showSettings, webViewError, currentWebUrl]);
+
+  const markIncomingCallDismissed = useCallback((payload: IncomingCallPayload) => {
+    const key = incomingCallDedupKey(payload.callUrl, payload.messageId);
+    dismissedIncomingKeysRef.current.add(key);
+    void persistDismissedIncomingKey(key);
+  }, []);
+
+  const shouldSuppressIncomingCall = useCallback((payload: IncomingCallPayload) => {
+    const key = incomingCallDedupKey(payload.callUrl, payload.messageId);
+    return dismissedIncomingKeysRef.current.has(key);
+  }, []);
+
+  useEffect(() => {
+    void loadDismissedIncomingKeys().then((set) => {
+      dismissedIncomingKeysRef.current = set;
+    });
+  }, []);
 
   const tryOpenCallUrl = useCallback((rawUrl: string): boolean => {
     const callUrl = resolveTrustedCallUrl(rawUrl, trustedCallHosts);
@@ -312,6 +380,7 @@ function AppContent() {
 
     if (response.actionIdentifier === CALL_ACTION_DECLINE) {
       void Notifications.dismissNotificationAsync(response.notification.request.identifier);
+      markIncomingCallDismissed(callPayload);
       setIncomingCall(null);
       return true;
     }
@@ -326,7 +395,7 @@ function AppContent() {
 
     setIncomingCall(callPayload);
     return true;
-  }, [tryOpenCallUrl]);
+  }, [tryOpenCallUrl, markIncomingCallDismissed]);
 
   const refreshAuthSession = useCallback(async () => {
     if (!domain) return;
@@ -417,12 +486,17 @@ function AppContent() {
     })();
 
     const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
+      const nid = notification.request.identifier;
+      if (seenNotificationIdsRef.current.has(nid)) return;
+      seenNotificationIdsRef.current.add(nid);
+
       const callPayload = extractIncomingCallPayload(notification.request.content as {
         title?: string | null;
         body?: string | null;
         data?: Record<string, unknown> | null;
       });
       if (callPayload) {
+        if (shouldSuppressIncomingCall(callPayload)) return;
         setIncomingCall(callPayload);
       }
     });
@@ -439,7 +513,7 @@ function AppContent() {
       receivedSub.remove();
       responseSub.remove();
     };
-  }, [handleNotificationResponse]);
+  }, [handleNotificationResponse, shouldSuppressIncomingCall]);
 
   useEffect(() => {
     if (!domain || !pendingNotificationPath) return;
@@ -464,6 +538,23 @@ function AppContent() {
       Vibration.cancel();
     };
   }, [incomingCall, activeCallUrl]);
+
+  /** Leaving the room (or app web UI) without accepting clears the overlay and remembers dismiss so repeat pushes don’t re-open it. */
+  useEffect(() => {
+    if (!incomingCall || !domain || !currentWebUrl) return;
+    if (!incomingCall.path) return;
+    try {
+      const roomPath = new URL(incomingCall.path, domain).pathname;
+      const curPath = new URL(currentWebUrl).pathname;
+      const stillInRoom = curPath === roomPath || curPath.startsWith(`${roomPath}/`);
+      if (!stillInRoom) {
+        markIncomingCallDismissed(incomingCall);
+        setIncomingCall(null);
+      }
+    } catch {
+      // ignore URL parse errors
+    }
+  }, [currentWebUrl, incomingCall, domain, markIncomingCallDismissed]);
 
   const ensurePushRegistration = useCallback(async () => {
     if (!authUserId) {
@@ -691,7 +782,11 @@ function AppContent() {
         <TouchableOpacity
           style={[
             styles.floatingSettingsButton,
-            { bottom: Math.max(insets.bottom + 16, 24), backgroundColor: colors.surface, borderColor: colors.border }
+            {
+              bottom: Math.max(insets.bottom + 16, 24),
+              backgroundColor: colors.surface,
+              borderColor: colors.border
+            }
           ]}
           onPress={() => setShowSettings(true)}
         >
@@ -774,6 +869,7 @@ function AppContent() {
           setSupportMultipleWindows
           onOpenWindow={handleOpenWindow}
           onShouldStartLoadWithRequest={handleShouldStartLoad}
+          applicationNameForUserAgent="CampfireMobileApp/1"
           injectedJavaScriptBeforeContentLoaded={`
             window.__CAMPFIRE_NATIVE_APP__ = true;
             window.__CAMPFIRE_NATIVE_APP_PLATFORM__ = "react-native";
@@ -789,6 +885,31 @@ function AppContent() {
                 }
               }
             };
+            (function() {
+              function boot() {
+                var root = document.documentElement;
+                var raf = 0;
+                function syncKeyboardInset() {
+                  if (!window.visualViewport) return;
+                  var vv = window.visualViewport;
+                  var inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+                  root.style.setProperty("--campfire-keyboard-overlay", inset + "px");
+                }
+                function scheduleSync() {
+                  if (raf) return;
+                  raf = requestAnimationFrame(function() {
+                    raf = 0;
+                    syncKeyboardInset();
+                  });
+                }
+                if (window.visualViewport) {
+                  window.visualViewport.addEventListener("resize", scheduleSync);
+                  scheduleSync();
+                }
+              }
+              if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+              else boot();
+            })();
             true;
           `}
           onMessage={handleWebViewMessage}
@@ -796,6 +917,7 @@ function AppContent() {
           onLoadEnd={handleWebViewLoadEnd}
           onError={handleWebViewError}
           onHttpError={() => handleWebViewError({})}
+          {...(Platform.OS === "android" ? { mixedContentMode: "always" as const } : {})}
         />
       </View>
 
@@ -869,6 +991,7 @@ function AppContent() {
                 allowsFullscreenVideo
                 mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
                 setSupportMultipleWindows={false}
+                {...(Platform.OS === "android" ? { mixedContentMode: "always" as const } : {})}
               />
             </View>
           </View>
@@ -883,7 +1006,10 @@ function AppContent() {
             <View style={styles.incomingCallActions}>
               <TouchableOpacity
                 style={[styles.buttonSecondary, styles.incomingCallDeclineButton, { borderColor: colors.border }]}
-                onPress={() => setIncomingCall(null)}
+                onPress={() => {
+                  markIncomingCallDismissed(incomingCall);
+                  setIncomingCall(null);
+                }}
               >
                 <Text style={[styles.buttonSecondaryLabel, { color: colors.text }]}>Dismiss</Text>
               </TouchableOpacity>

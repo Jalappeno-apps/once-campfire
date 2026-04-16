@@ -86,7 +86,8 @@ module Mobile
               type: payload[:type],
               call_url: payload[:call_url],
               caller_name: payload[:caller_name],
-              room_name: payload[:room_name]
+              room_name: payload[:room_name],
+              message_id: payload[:message_id]
             }.compact
           end
 

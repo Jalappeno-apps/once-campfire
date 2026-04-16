@@ -1,4 +1,6 @@
 html {
+  /* Set by injected script in the native WebView when the OS keyboard overlaps the visual viewport */
+  --campfire-keyboard-overlay: 0px;
   overscroll-behavior: none;
 }
 

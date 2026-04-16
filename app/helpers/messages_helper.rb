@@ -195,7 +195,8 @@ module MessagesHelper
       uri = URI.parse(call_link.to_s)
       return uri.to_s if uri.host.present?
 
-      URI.join(request.base_url, call_link.to_s).to_s
+      base = Campfire::PublicApp.origin.presence || request.base_url
+      URI.join("#{base.chomp("/")}/", call_link.to_s.sub(/\A\/+/, "/")).to_s
     rescue URI::InvalidURIError
       call_link.to_s
     end

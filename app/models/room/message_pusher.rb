@@ -143,6 +143,6 @@ class Room::MessagePusher
     end
 
     def enqueue_mobile_payload_for_delivery(payload, devices)
-      Mobile::Push::DeliveryClient.deliver(payload:, devices:)
+      Mobile::Push::DeliveryClient.deliver(payload: payload.merge(message_id: message.id), devices: devices)
     end
 end
