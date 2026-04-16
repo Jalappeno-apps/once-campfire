@@ -5,7 +5,7 @@ class Rooms::ClosedsController < RoomsController
   before_action :force_room_type, only: %i[ edit update ]
   before_action :ensure_permission_to_create_rooms, only: %i[ new create ]
 
-  DEFAULT_ROOM_NAME = "New room"
+  DEFAULT_ROOM_NAME = "New channel"
 
   def show
     redirect_to room_url(@room)
@@ -56,7 +56,7 @@ class Rooms::ClosedsController < RoomsController
 
     def broadcast_create_room(room)
       each_user_and_html_for(room) do |user, html|
-        broadcast_prepend_to user, :rooms, target: :shared_rooms, html: html
+        broadcast_prepend_to user, :rooms, target: room_list_target(room), html: html
       end
     end
 
@@ -71,5 +71,9 @@ class Rooms::ClosedsController < RoomsController
       html = render_to_string(partial: "users/sidebars/rooms/shared", locals: { room: room })
 
       room.users.each { |user| yield user, html }
+    end
+
+    def room_list_target(room)
+      :channel_rooms
     end
 end

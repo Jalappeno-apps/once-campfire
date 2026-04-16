@@ -1,0 +1,11 @@
+<% chat_room = @sidebar_bot_chat_rooms[bot.id] || Rooms::Direct.find_or_create_for([ Current.user, bot ]) %>
+
+<%= link_to room_path(chat_room),
+      class: "sidebar-row align-center gap btn txt-nowrap sidebar-bot",
+      data: { turbo_frame: "_top" },
+      aria: { label: "Open chat with #{bot.name}" } do %>
+  <figure class="avatar sidebar-bot__avatar-wrap flex-item-no-shrink" style="--avatar-size: 1.5rem">
+    <%= image_tag fresh_user_avatar_path(bot), aria: { hidden: "true" } %>
+  </figure>
+  <span class="sidebar-row__label overflow-ellipsis"><%= bot.name %></span>
+<% end %>

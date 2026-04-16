@@ -6,7 +6,7 @@
       <button class="btn" data-action="click->notifications#attemptToSubscribe" data-notifications-target="bell">
         <%= image_tag "notification-bell-loading.svg", size: 20, aria: { hidden: "true" } %>
         <%= image_tag "notification-bell-alert.svg", size: 20, aria: { hidden: "true" }, hidden: true %>
-        <span class="for-screen-reader">Notification settings for this <%= room.direct? ? "Ping" : "room" %></span>
+        <span class="for-screen-reader">Notification settings for this <%= room.direct? ? "direct message" : "channel" %></span>
       </button>
     <% end %>
 

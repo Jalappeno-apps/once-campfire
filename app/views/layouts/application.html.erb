@@ -74,9 +74,18 @@
       </div>
     </div>
 
-    <aside id="sidebar" data-controller="toggle-class" data-toggle-class-toggle-class="open">
-      <%= yield :sidebar %>
-    </aside>
+    <div class="sidebar-shell" data-controller="sidebar-drawer">
+      <button type="button"
+              class="btn sidebar__toggle-fab"
+              data-action="sidebar-drawer#toggle"
+              aria-controls="sidebar">
+        <%= image_tag "menu.svg", size: 20, aria: { hidden: true } %>
+        <span class="for-screen-reader">Open sidebar menu</span>
+      </button>
+      <aside id="sidebar" data-sidebar-drawer-target="drawer">
+        <%= yield :sidebar %>
+      </aside>
+    </div>
 
     <%= render "layouts/lightbox" %>
 

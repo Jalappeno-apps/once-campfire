@@ -34,4 +34,17 @@ class RoomTest < ActiveSupport::TestCase
     room = Rooms::Closed.create_for({ name: "Hello!", creator: users(:david) }, users: [ users(:kevin), users(:david) ])
     assert room.memberships.all? { |m| m.involved_in_mentions? }
   end
+
+  test "direct_only_bots_besides? is true for a human–bot direct room from the human's perspective" do
+    room = rooms(:bender_and_kevin)
+
+    assert room.direct_only_bots_besides?(users(:kevin))
+    assert_not room.direct_only_bots_besides?(users(:bender))
+  end
+
+  test "direct_only_bots_besides? is false when another human is in the direct room" do
+    room = rooms(:david_and_jason)
+
+    assert_not room.direct_only_bots_besides?(users(:david))
+  end
 end

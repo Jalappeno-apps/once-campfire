@@ -5,7 +5,7 @@ class Rooms::OpensController < RoomsController
   before_action :force_room_type, only: %i[ edit update ]
   before_action :ensure_permission_to_create_rooms, only: %i[ new create ]
 
-  DEFAULT_ROOM_NAME = "New room"
+  DEFAULT_ROOM_NAME = "New channel"
 
   def show
     redirect_to room_url(@room)
@@ -41,7 +41,7 @@ class Rooms::OpensController < RoomsController
     end
 
     def broadcast_create_room(room)
-      broadcast_prepend_to :rooms, target: :shared_rooms, partial: "users/sidebars/rooms/shared", locals: { room: room }
+      broadcast_prepend_to :rooms, target: :channel_rooms, partial: "users/sidebars/rooms/shared", locals: { room: room }
     end
 
     def broadcast_update_room

@@ -11,6 +11,12 @@
   row-gap: var(--block-space);
   z-index: 2;
 
+  /* Native WebView / notched phones: safe top on every screen (not only `body.sidebar` — e.g. room settings) */
+  @media (max-width: 100ch) {
+    padding-block-end: var(--block-space-half);
+    padding-block-start: calc(env(safe-area-inset-top, 0px) + var(--block-space-half));
+  }
+
   &:has(.room--current) {
     padding-inline: var(--inline-space);
 
@@ -31,9 +37,10 @@
     }
   }
 
-  .sidebar & {
+  body.sidebar & {
     @media (max-width: 100ch) {
-      padding-block: var(--block-space-half);
+      /* Reserve trailing column for fixed `.sidebar__toggle-fab` */
+      padding-inline-end: calc(env(safe-area-inset-right, 0px) + var(--btn-size) + var(--inline-space-double));
 
       &::before {
         background: linear-gradient(180deg, oklch(var(--lch-white)) 20%, oklch(var(--lch-white) / 0) 100%);

@@ -15,9 +15,15 @@ body {
   grid-template-rows: min-content 1fr;
   max-block-size: 100dvh;
 
+  /* Room edit, account, etc. don’t use `body.sidebar` but still need real nav height on notched WebViews */
+  @media (max-width: 100ch) {
+    --navbar-height: calc(env(safe-area-inset-top, 0px) + var(--block-space) + var(--btn-size));
+  }
+
   &.sidebar {
     @media (min-width: 100ch) {
-      --sidebar-width: 26vw;
+      /* One width for grid column, nav offset, autocomplete, and sidebar chrome */
+      --sidebar-width: 360px;
     }
   }
 }
@@ -64,17 +70,29 @@ body {
   position: relative;
 
   .sidebar & {
-    justify-content: end;
+    @media (max-width: 100ch) {
+      justify-content: start;
+    }
 
     @media (min-width: 100ch) {
       border-inline: 1px solid var(--color-border-darker);
+      justify-content: end;
       margin-inline: 5vw 0;
     }
   }
 }
 
-#sidebar {
+.sidebar-shell {
+  display: flex;
+  flex-direction: column;
   grid-area: sidebar;
+  min-inline-size: 0;
+  position: relative;
+}
+
+#sidebar {
+  flex: 1 1 auto;
+  min-block-size: 0;
   position: relative;
   transition: transform 300ms ease;
 
@@ -83,11 +101,20 @@ body {
     backdrop-filter: blur(66px);
     background-color: oklch(var(--lch-white) / 0.66);
     block-size: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     max-block-size: 100dvh;
+    min-inline-size: 0;
     z-index: 3;
+
+    @media (min-width: 100ch) {
+      inline-size: var(--sidebar-width);
+    }
 
     @media (max-width: 100ch) {
       inset: 0;
+      inline-size: 100%;
       position: fixed;
       transform: translate(100%);
     }

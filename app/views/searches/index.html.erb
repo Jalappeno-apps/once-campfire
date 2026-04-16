@@ -30,10 +30,16 @@
 
 <% content_for :sidebar do %>
   <div class="rooms position-relative flex flex-column gap overflow-y overflow-hide-scrollbar">
+    <h2 class="sidebar-group__title txt-small margin-none">Recent searches</h2>
+
     <% @recent_searches.each do |search| %>
       <%= link_to searches_path(q: search.query), class: "align-center gap room btn txt-nowrap" do %>
         <span class="overflow-ellipsis">“<%= search.query %>”</span>
       <% end %>
+    <% end %>
+
+    <% if @recent_searches.none? %>
+      <span class="txt-small translucent">Search for messages, channels, and people.</span>
     <% end %>
 
     <% if @recent_searches.any? %>

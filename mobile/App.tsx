@@ -144,6 +144,20 @@ function resolveTrustedCallUrl(rawUrl: string, trustedHosts: string[]): string |
   }
 }
 
+function isAllowedExternalUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === "calendar.google.com" ||
+      host === "www.google.com" ||
+      host.endsWith(".google.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function ensureCallPermissions(): Promise<boolean> {
   if (Platform.OS !== "android") return true;
 
@@ -591,6 +605,10 @@ function AppContent() {
     if (!domain) return true;
 
     if (tryOpenCallUrl(request.url)) return false;
+    if (isAllowedExternalUrl(request.url)) {
+      void Linking.openURL(request.url);
+      return false;
+    }
 
     try {
       const requestedUrl = new URL(request.url);
@@ -607,6 +625,10 @@ function AppContent() {
     if (!targetUrl) return;
 
     if (tryOpenCallUrl(targetUrl)) return;
+    if (isAllowedExternalUrl(targetUrl)) {
+      void Linking.openURL(targetUrl);
+      return;
+    }
 
     try {
       const appOrigin = domain ? new URL(domain).origin : null;
@@ -654,7 +676,9 @@ function AppContent() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
+    /* Top inset: handled inside the WebView via CSS `env(safe-area-inset-*)`. Applying `edges={["top"]}`
+       here *and* env() in the page doubled top padding when the sidebar drawer opened. */
+    <SafeAreaView edges={["bottom"]} style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
       {shouldShowServerButton && (
         <TouchableOpacity

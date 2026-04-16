@@ -25,7 +25,7 @@ class Rooms::DirectsController < RoomsController
 
     def broadcast_create_room(room)
       room.memberships.each do |membership|
-        membership.broadcast_prepend_to membership.user, :rooms, target: :direct_rooms, partial: "users/sidebars/rooms/direct"
+        membership.broadcast_prepend_to membership.user, :rooms, target: :direct_rooms, partial: "users/sidebars/rooms/shared", locals: { membership: membership }
       end
     end
 

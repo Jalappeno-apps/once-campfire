@@ -3,61 +3,135 @@
   <%= turbo_stream_from Current.user, :rooms %>
 
   <div class="sidebar__container overflow-y overflow-hide-scrollbar"
-      data-controller="badge-dot"
+      data-controller="badge-dot sidebar-sections"
       data-badge-dot-unread-class="unread"
       data-action="rooms-list:unread@window->badge-dot#update rooms-list:read@window->badge-dot#update turbo:submit-start->turbo-frame#unpermanize">
-    <turbo-frame id="direct_rooms_control" target="_top">
-      <div class="directs gap overflow-x overflow-hide-scrollbar">
-        <%= link_to new_rooms_direct_path, class: "direct direct__new", data: { turbo_frame: "_self" } do %>
-          <span class="avatar avatar--icon">
-            <%= image_tag "messages-add.svg", size: 20, aria: { hidden: "true" }, class: "colorize--black" %>
-          </span>
-
-          <span class="direct__author flex max-width min-width border-radius pad-inline-half">
-            <span class="for-screen-reader">New</span>
-            <span class="txt-small overflow-clip">Ping</span>
-          </span>
-        <% end %>
-
-        <div id="direct_rooms" contents data-controller="sorted-list" data-action="rooms-list:unread@window->sorted-list#updateItem">
-          <%= render partial: "users/sidebars/rooms/direct", collection: @direct_memberships, as: :membership, cached: true %>
-        </div>
-
-        <div contents>
-          <%= render partial: "users/sidebars/rooms/direct_placeholder", collection: @direct_placeholder_users, as: :user %>
-        </div>
-      </div>
-    </turbo-frame>
-
-    <div class="rooms position-relative flex flex-column gap">
-      <div id="shared_rooms" contents data-controller="sorted-list">
-        <% @other_memberships.each do |membership| %>
-          <%= render "users/sidebars/rooms/shared", room: membership.room, unread: membership.unread? %>
-        <% end %>
-      </div>
-
-      <% if Current.user.administrator? || !Current.account&.settings&.restrict_room_creation_to_administrators? %>
-        <%= link_to new_rooms_open_path, class: "rooms__new-btn btn room align-center gap txt-reversed", aria: { label: "New Chat Room" } do %>
-          <%= image_tag "add.svg", size: 20, aria: { hidden: "true" }, style: "view-transition-name: new-room" %>
-        <% end %>
+    <header class="sidebar__workspace-header flex align-center gap">
+      <button type="button" class="btn sidebar__toggle" data-action="sidebar-drawer#toggle">
+        <%= image_tag "menu.svg", size: 20, aria: { hidden: "true" } %>
+        <span class="for-screen-reader">Open menu</span>
+      </button>
+      <%= link_to edit_account_path, class: "btn avatar account-logo sidebar__account-logo flex-item-no-shrink", data: { turbo_frame: "_top" }, aria: { label: "Account settings" } do %>
+        <%= image_tag fresh_account_logo_path(size: :small), role: "presentation", alt: "", size: 96 %>
       <% end %>
+      <strong class="sidebar__workspace-name flex-item-grow overflow-ellipsis"><%= Current.account&.name || "Campfire" %></strong>
+    </header>
+
+    <div class="sidebar__body overflow-y overflow-hide-scrollbar" data-controller="sidebar-active-room">
+      <div class="rooms position-relative flex flex-column gap">
+        <%= link_to searches_path, class: "rooms__search-field input input--actor flex align-center gap full-width", role: "search", data: { turbo_frame: "_top" }, style: "--input-border-radius: 1.25rem" do %>
+          <%= image_tag "search.svg", size: 20, aria: { hidden: "true" }, class: "rooms__search-field-icon flex-item-no-shrink" %>
+          <span class="rooms__search-field-label overflow-ellipsis">Search</span>
+        <% end %>
+
+        <section class="sidebar-group flex flex-column gap">
+          <div class="sidebar-group__heading flex align-center gap">
+            <button class="sidebar-group__header btn txt-small align-center gap flex-item-grow"
+                    data-action="click->sidebar-sections#toggle"
+                    data-sidebar-sections-section-param="channels"
+                    data-sidebar-sections-target="trigger"
+                    type="button">
+              <%= image_tag "arrow-down.svg", size: 14, aria: { hidden: "true" }, class: "sidebar-group__arrow colorize--black" %>
+              <span class="flex-item-grow txt-align-start">Channels</span>
+              <span class="sidebar-group__count"><%= @channel_memberships.count %></span>
+            </button>
+
+            <% if Current.user.administrator? || !Current.account&.settings&.restrict_room_creation_to_administrators? %>
+              <%= link_to new_rooms_open_path, class: "sidebar-group__action btn", data: { turbo_frame: "_top" }, aria: { label: "Create channel" } do %>
+                <%= image_tag "add.svg", size: 16, aria: { hidden: "true" }, style: "view-transition-name: new-room" %>
+              <% end %>
+            <% end %>
+          </div>
+
+          <div id="channel_rooms" class="sidebar-group__list sidebar-group__rows" data-controller="sorted-list" data-sidebar-sections-target="section" data-sidebar-sections-section-id="channels">
+            <%= render partial: "users/sidebars/rooms/shared", collection: @channel_memberships, as: :membership %>
+          </div>
+        </section>
+
+        <section class="sidebar-group flex flex-column gap">
+          <div class="sidebar-group__heading flex align-center gap">
+            <button class="sidebar-group__header btn txt-small align-center gap flex-item-grow"
+                    data-action="click->sidebar-sections#toggle"
+                    data-sidebar-sections-section-param="direct_messages"
+                    data-sidebar-sections-target="trigger"
+                    type="button">
+              <%= image_tag "arrow-down.svg", size: 14, aria: { hidden: "true" }, class: "sidebar-group__arrow colorize--black" %>
+              <span class="flex-item-grow txt-align-start">Direct messages</span>
+              <span class="sidebar-group__count"><%= @direct_memberships.count %></span>
+            </button>
+
+            <%= link_to new_rooms_direct_path, class: "sidebar-group__action btn", data: { turbo_frame: "direct_rooms_control" }, aria: { label: "New direct message" } do %>
+              <%= image_tag "add.svg", size: 16, aria: { hidden: "true" } %>
+            <% end %>
+          </div>
+
+          <turbo-frame id="direct_rooms_control" target="_top" data-sidebar-sections-target="section" data-sidebar-sections-section-id="direct_messages">
+            <div class="sidebar-group__list directs gap">
+              <div id="direct_rooms" class="sidebar-group__rows" data-controller="sorted-list" data-action="rooms-list:unread@window->sorted-list#updateItem">
+                <%= render partial: "users/sidebars/rooms/shared", collection: @direct_memberships, as: :membership %>
+              </div>
+            </div>
+          </turbo-frame>
+        </section>
+
+        <% if Current.user.administrator? || @sidebar_bots.any? %>
+          <section class="sidebar-group flex flex-column gap">
+            <div class="sidebar-group__heading flex align-center gap">
+              <button class="sidebar-group__header btn txt-small align-center gap flex-item-grow"
+                      data-action="click->sidebar-sections#toggle"
+                      data-sidebar-sections-section-param="bots"
+                      data-sidebar-sections-target="trigger"
+                      type="button">
+                <%= image_tag "arrow-down.svg", size: 14, aria: { hidden: "true" }, class: "sidebar-group__arrow colorize--black" %>
+                <span class="flex-item-grow txt-align-start">Chat bots</span>
+                <span class="sidebar-group__count"><%= @sidebar_bots.count %></span>
+              </button>
+
+              <% if Current.user.administrator? %>
+                <%= link_to new_account_bot_path, class: "sidebar-group__action btn", data: { turbo_frame: "_top" }, aria: { label: "Add chat bot" } do %>
+                  <%= image_tag "add.svg", size: 16, aria: { hidden: "true" } %>
+                <% end %>
+              <% end %>
+            </div>
+
+            <div id="sidebar_bots_list" class="sidebar-group__list sidebar-group__rows" data-sidebar-sections-target="section" data-sidebar-sections-section-id="bots">
+              <% @sidebar_bots.each do |bot| %>
+                <%= render "users/sidebars/bots/row", bot: bot %>
+              <% end %>
+
+              <% if Current.user.administrator? && @sidebar_bots.empty? %>
+                <%= link_to new_account_bot_path, class: "sidebar-bot-empty btn room align-center gap", data: { turbo_frame: "_top" } do %>
+                  <span class="overflow-ellipsis">Add a chat bot</span>
+                <% end %>
+              <% end %>
+            </div>
+          </section>
+        <% end %>
+      </div>
     </div>
 
-    <button class="btn sidebar__toggle" data-action="toggle-class#toggle">
-      <%= image_tag "menu.svg", size: 20, aria: { hidden: "true" } %>
-      <span class="for-screen-reader">Open menu</span>
-    </button>
   </div>
 
-  <div class="flex align-end sidebar__tools gap justify-end">
-    <%= link_to user_profile_path, class: "btn avatar flex-item-no-shrink sidebar__tool" do %>
-      <%= image_tag fresh_user_avatar_path(Current.user), size: 48, aria: { hidden: "true" }, style: "view-transition-name: avatar-#{Current.user.id}" %>
-      <span class="for-screen-reader">My Settings</span>
+  <div class="flex align-center sidebar__tools gap">
+    <%= link_to user_profile_path, class: "btn flex align-center gap flex-item-grow sidebar__tool sidebar__profile", style: "view-transition-name: profile-#{Current.user.id}" do %>
+      <figure class="avatar flex-item-no-shrink" style="--avatar-size: 2rem">
+        <%= user_avatar_img_tag Current.user, style: "view-transition-name: avatar-#{Current.user.id}" %>
+      </figure>
+      <span class="overflow-ellipsis"><%= Current.user.name %></span>
+      <span class="for-screen-reader">My settings</span>
     <% end %>
 
-    <%= link_to edit_account_path, class: "btn align-center gap txt-reversed sidebar__tool" do %>
+    <%= link_to edit_account_path, class: "btn align-center gap sidebar__tool sidebar__settings" do %>
       <%= image_tag "settings.svg", size: 20, aria: { hidden: "true" }, style: "view-transition-name: account-settings" %>
       <span class="for-screen-reader">Account Settings</span>
+    <% end %>
+
+    <%= form_with url: session_path, method: :delete, class: "sidebar__logout-form flex-item-no-shrink", data: { controller: "sessions", turbo_frame: "_top" } do %>
+      <%= hidden_field_tag :push_subscription_endpoint, nil, data: { sessions_target: "pushSubscriptionEndpoint" } %>
+      <button type="submit" class="btn align-center gap sidebar__tool sidebar__logout" data-action="sessions#logout:prevent" aria-label="Log out">
+        <%= image_tag "logout.svg", size: 20, aria: { hidden: "true" } %>
+        <span class="for-screen-reader">Log out</span>
+      </button>
     <% end %>
   </div>
 <% end %>

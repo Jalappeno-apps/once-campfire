@@ -6,6 +6,17 @@ export default class extends Controller {
 
   connect() {
     this.hostAllowlistValue = this.hostAllowlistValue?.length ? this.hostAllowlistValue : [ "meet.jit.si" ]
+    this.beforeVisit = () => this.close()
+    document.addEventListener("turbo:before-visit", this.beforeVisit)
+    document.addEventListener("turbo:before-cache", this.beforeVisit)
+    window.addEventListener("pagehide", this.beforeVisit)
+  }
+
+  disconnect() {
+    document.removeEventListener("turbo:before-visit", this.beforeVisit)
+    document.removeEventListener("turbo:before-cache", this.beforeVisit)
+    window.removeEventListener("pagehide", this.beforeVisit)
+    this.close()
   }
 
   handleLink(event) {

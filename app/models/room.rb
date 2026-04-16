@@ -61,6 +61,16 @@ class Room < ApplicationRecord
     is_a?(Rooms::Direct)
   end
 
+  # Other participants in this direct room (for sidebar / presence).
+  def direct_peers_excluding(user)
+    users.reject { |u| u.id == user.id }
+  end
+
+  # True when everyone besides `user` is a bot (1:1 or small group bot chats).
+  def direct_only_bots_besides?(user)
+    direct? && (peers = direct_peers_excluding(user)).any? && peers.all?(&:bot?)
+  end
+
   def default_involvement
     "mentions"
   end

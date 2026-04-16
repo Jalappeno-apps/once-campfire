@@ -1,38 +1,161 @@
-/* Sidebar */
+/* Sidebar — monochrome rail (always dark) so it stays legible in light or OS dark mode */
 :root {
+  --sidebar-bg: #111;
+  --sidebar-header-bg: #111;
   --sidebar-inline-space: max(calc(var(--inline-space) * 1.5), 1vw);
   --sidebar-tools-height: calc(var(--block-space) + var(--btn-size) + (var(--block-space) * 2));
 }
 
+body.sidebar #sidebar {
+  --sidebar-fg: #fff;
+  --sidebar-fg-muted: rgb(255 255 255 / 0.65);
+  --sidebar-fg-subtle: rgb(255 255 255 / 0.45);
+  --sidebar-border: rgb(255 255 255 / 0.1);
+  --sidebar-row-hover: rgb(255 255 255 / 0.07);
+  --sidebar-row-active-bg: #fff;
+  --sidebar-row-active-fg: #000;
+  --sidebar-search-bg: rgb(255 255 255 / 0.08);
+  --sidebar-search-fg: #fff;
+  --sidebar-search-border: rgb(255 255 255 / 0.14);
+  --sidebar-btn-hover-outline: rgb(255 255 255 / 0.18);
+}
+
+/* Avoid global `.btn` brightness hover dimming dark-sidebar rows */
+#sidebar .btn {
+  --hover-filter: brightness(1);
+}
+
 .sidebar__container {
+  background-color: var(--sidebar-bg);
   block-size: 100dvh;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  inline-size: 100%;
   max-block-size: 100dvh;
+  max-inline-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  padding-block-end: 0;
+}
+
+.sidebar__workspace-header {
+  background-color: var(--sidebar-header-bg);
+  border-bottom: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+  gap: 0.5rem;
+  min-block-size: 3.7rem;
+  padding-block: 0.55rem;
+  padding-inline: clamp(0.65rem, 1vw, 1rem);
+  position: relative;
+
+  /* One safe-area inset (not also on `.sidebar__container`) so the drawer doesn’t get double top padding */
+  @media (max-width: 100ch) {
+    padding-block-start: calc(0.55rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+.sidebar__workspace-name {
+  color: var(--sidebar-fg);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* Match main nav: square-ish account logo (see `avatars.css` `.account-logo`) */
+#sidebar .sidebar__account-logo {
+  --avatar-border-radius: 0.45em;
+  --avatar-size: 2.25rem;
+  --btn-padding: 0;
+
+  flex-shrink: 0;
+}
+
+.sidebar__body {
+  flex: 1;
+  min-block-size: 0;
   padding-block-end: var(--sidebar-tools-height);
 }
 
 .sidebar__tools {
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  inset: auto 0 0 0;
-  padding-block: calc(var(--block-space) * 1.5);
-  padding-inline: var(--sidebar-inline-space);
+  background-color: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  box-sizing: border-box;
+  padding-block: calc(var(--block-space) * 1.1);
+  padding-block-end: calc((var(--block-space) * 1.1) + env(safe-area-inset-bottom, 0px));
+  padding-inline: clamp(0.75rem, 1vw, 1rem);
+  padding-inline-end: calc(clamp(0.75rem, 1vw, 1rem) + env(safe-area-inset-right, 0px));
+  padding-inline-start: calc(clamp(0.75rem, 1vw, 1rem) + env(safe-area-inset-left, 0px));
   position: fixed;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  z-index: 4;
+
+  @media (max-width: 100ch) {
+    inset-inline-start: 0;
+    inline-size: 100%;
+  }
 
   @media (min-width: 100ch) {
-    inline-size: calc(var(--sidebar-width));
-    inset-inline-start: auto;
+    inline-size: var(--sidebar-width);
   }
 }
 
+.sidebar__tool {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-color: var(--sidebar-fg);
+  --hover-color: var(--sidebar-btn-hover-outline);
+}
+
+.sidebar__profile {
+  --btn-border-radius: 0.4em;
+  --btn-padding: 0.25em 0.35em;
+
+  color: var(--sidebar-fg);
+  justify-content: start;
+
+  /* Same circular avatar treatment as messages / `avatar_tag` (see `avatars.css`) */
+  .avatar {
+    --avatar-border-radius: 50%;
+  }
+}
+
+.sidebar__settings {
+  --btn-color: var(--sidebar-fg-muted);
+  --btn-padding: 0.25em;
+  min-inline-size: unset;
+}
+
+.sidebar__logout {
+  --btn-color: var(--sidebar-fg-muted);
+  --btn-padding: 0.25em;
+  min-inline-size: unset;
+}
+
+.sidebar__logout-form {
+  display: contents;
+}
+
+#sidebar .sidebar__settings img {
+  filter: brightness(0) invert(1);
+  opacity: 0.88;
+}
+
+#sidebar .sidebar__logout img {
+  filter: brightness(0) invert(1);
+  opacity: 0.88;
+}
+
 .sidebar__toggle {
-  inset-block-start: var(--block-space-half);
-  inset-inline-start: calc((var(--btn-size) + max(var(--inline-space), 1vw)) * -1);
-  position: absolute;
-  transition:
-    inset-inline-start 300ms ease,
-    border-color 300ms ease,
-    background-color 300ms ease;
-  z-index: 5;
+  --btn-background: rgb(255 255 255 / 0.08);
+  --btn-border-color: transparent;
+  --btn-padding: 0.35rem;
+  --hover-color: var(--sidebar-btn-hover-outline);
+
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 
   #sidebar:where(:not(.open):has(.unread)) & {
     &::after {
@@ -53,63 +176,78 @@
 
   @media (min-width: 100ch) {
     display: none;
-    inset-block-start: var(--block-space);
   }
 
-  .open & {
-    inset-block-start: var(--block-space);
+  & img {
+    filter: invert(100%);
+  }
+}
 
+/* Fixed control outside the translated drawer so it stays tappable when the rail is closed */
+.sidebar__toggle-fab {
+  --btn-background: rgb(255 255 255 / 0.92);
+  --btn-border-color: transparent;
+  --btn-padding: 0.35rem;
+  --hover-color: var(--color-border-darker);
+
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+  display: none;
+  /* Align with `#nav` mobile `padding-block-start` (env top + half block) */
+  inset-block-start: calc(env(safe-area-inset-top, 0px) + var(--block-space-half));
+  inset-inline-end: calc(env(safe-area-inset-right, 0px) + var(--inline-space-half));
+  pointer-events: auto;
+  position: fixed;
+  z-index: 5;
+
+  & img {
+    filter: none;
+  }
+
+  body.sidebar & {
     @media (max-width: 100ch) {
-      inset-inline-start: var(--sidebar-inline-space);
+      display: inline-grid;
+    }
+  }
 
-      & img {
-        filter: invert(0);
-      }
+  /* Drawer open: header hamburger is visible; hide the fixed duplicate */
+  body.sidebar:has(#sidebar.open) & {
+    @media (max-width: 100ch) {
+      display: none !important;
+    }
+  }
 
-      @media (prefers-color-scheme: dark) {
-        & img {
-          filter: invert(100%);
-        }
-      }
+  body.sidebar:has(#sidebar:not(.open)):has(#sidebar .unread) & {
+    &::after {
+      --size: 1em;
+
+      aspect-ratio: 1;
+      background-color: var(--color-negative);
+      block-size: var(--size);
+      border-radius: calc(var(--size) * 2);
+      content: "";
+      flex-shrink: 0;
+      inline-size: var(--size);
+      inset-block-start: calc(var(--size) / -4);
+      inset-inline-end: calc(var(--size) / -4);
+      position: absolute;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    --btn-background: rgb(40 40 40 / 0.92);
+
+    & img {
+      filter: invert(100%);
     }
   }
 }
 
 /* Direct messsages */
 .directs {
-  --btn-border-color: var(--color-border-darker);
-  --column-gap: calc(var(--inline-space) / 1.5);
+  --row-gap: 0.25em;
 
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  display: grid;
-  grid-auto-columns: minmax(auto, max-content);
-  grid-auto-flow: column;
-  inset: 0 0 auto 0;
-  justify-content: start;
-  overscroll-behavior: auto;
-  margin-block-end: var(--block-space-half);
-  padding-block: var(--block-space) var(--block-space-half);
-  padding-inline: var(--sidebar-inline-space) calc(var(--sidebar-inline-space) + var(--column-gap));
-  position: sticky;
-  z-index: 3;
-
-  .open & {
-    @media (max-width: 100ch) {
-      -webkit-mask-image: linear-gradient(to left, oklch(0% 0 0 / 1) 85%, oklch(0% 0 0 / 0) 99%);
-      mask-image: linear-gradient(to left, oklch(0% 0 0 / 1) 85%, oklch(0% 0 0 / 0) 99%);
-      padding-inline-start: calc(var(--btn-size) + var(--sidebar-inline-space) + (var(--column-gap) * 2.5));
-    }
-  }
-
-  &.directs--new {
-    --column-gap: var(--inline-space);
-    --row-gap: 2px;
-
-    -webkit-mask-image: none;
-    mask-image: none;
-    padding-inline-end: var(--sidebar-inline-space);
-  }
+  display: flex;
+  flex-direction: column;
 }
 
 .directs--edit  {
@@ -128,36 +266,6 @@
   }
 }
 
-.direct {
-  border-radius: 0.3em;
-  box-shadow: none;
-  color: var(--color-text);
-  display: grid;
-  justify-items: center;
-  position: relative;
-  text-decoration: none;
-
-  .avatar,
-  .avatar__group {
-    margin-inline: calc(var(--inline-space) / 1.5);
-
-    .avatar {
-      margin-inline: 0;
-    }
-  }
-
-  @media (any-hover: hover) {
-    &:where(:not(:active):hover) .avatar:not(.avatar--icon) {
-      filter: brightness(0.7);
-    }
-  }
-
-  &:focus-within,
-  &:where(:not(:active)):focus-visible {
-    outline: 0;
-  }
-}
-
 .direct__new {
   margin-inline-end: var(--inline-space-half);
 
@@ -166,67 +274,301 @@
   }
 }
 
-.direct__author {
-  --column-gap: 0.3ch;
+#sidebar .sidebar-bot {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-border-radius: 0.2rem;
+  --btn-color: var(--sidebar-fg);
+  --btn-padding: 0.3rem 0.65rem;
+  --hover-color: var(--sidebar-btn-hover-outline);
 
-  margin-block-start: 0.1em;
+  color: var(--sidebar-fg-muted);
+  justify-content: start;
 
-  .unread & {
-    font-weight: 800;
-    position: relative;
-
-    &::after {
-      --size: 0.6em;
-
-      aspect-ratio: 1;
-      background-color: var(--color-text);
-      block-size: var(--size);
-      border-radius: calc(var(--size) * 2);
-      content: "";
-      flex-shrink: 0;
-      inline-size: var(--size);
-      position: absolute;
-      inset: 1.3em auto auto 50%;
-      transform: translate(-50%);
-    }
+  &:where(:not(:active)):hover {
+    --btn-background: var(--sidebar-row-hover);
   }
+}
+
+#sidebar .sidebar-bot:visited {
+  color: var(--sidebar-fg-muted);
+}
+
+
+#sidebar .sidebar-bot-empty {
+  --btn-color: var(--sidebar-fg-muted);
+
+  color: var(--sidebar-fg-muted);
+  font-size: 0.88rem;
+  justify-content: center;
+  min-block-size: 2.4rem;
 }
 
 /* Rooms */
 .rooms {
   --column-gap: 0.5em;
-  --row-gap: 0.5em;
+  --row-gap: 0.95em;
 
-  padding-inline: var(--sidebar-inline-space);
+  padding-block: 0.55rem 0.75rem;
+  padding-inline: 0.625rem;
 }
 
-.rooms__new-btn {
-  inset-block-end: calc((var(--sidebar-tools-height) * -1) + var(--block-space) * 1.5);
-  position: sticky;
-  z-index: 4;
+/* Composer-style pill (see `composer__input` + `input--actor`), tuned for dark chrome */
+#sidebar .rooms__search-field {
+  --hover-filter: brightness(1);
+  --input-background: rgb(255 255 255 / 0.06);
+  --input-border-color: rgb(255 255 255 / 0.16);
+  --input-border-radius: 1.25rem;
+  --input-border-size: 1px;
+  --input-color: var(--sidebar-search-fg);
+  --input-padding: 0.45rem 0.85rem;
+  --outline-size: 0;
+
+  font-size: 0.92rem;
+  margin-block: 0.15rem 0.45rem;
+  min-block-size: 2.45rem;
+  text-align: start;
+  text-decoration: none;
 }
 
-.room {
-  background-color: var(--color-text-reversed);
-  color: var(--color-text);
-  font-weight: normal;
+#sidebar .rooms__search-field:focus-visible {
+  --input-border-color: rgb(255 255 255 / 0.35);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.12);
+  outline: none;
+}
+
+#sidebar .rooms__search-field-icon {
+  filter: invert(100%);
+  opacity: 0.85;
+}
+
+#sidebar .rooms__search-field-label {
+  color: var(--sidebar-fg-muted);
+  font-weight: 500;
+}
+
+.sidebar-group {
+  --row-gap: 0.25em;
+}
+
+.sidebar-group__heading {
+  --column-gap: 0.35em;
+  margin-block-end: 0.15em;
+  padding-block: 0.1rem;
+  padding-inline: 0.35rem;
+}
+
+#sidebar .sidebar-group__header {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-border-radius: 0.3rem;
+  --btn-color: var(--sidebar-fg-muted);
+  --btn-padding: 0.4rem 0.5rem;
+  --hover-color: var(--sidebar-btn-hover-outline);
+
+  color: var(--sidebar-fg-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+#sidebar .sidebar-group__header:where(:not(:active):hover) {
+  --btn-background: var(--sidebar-row-hover);
+}
+
+.sidebar-group__arrow {
+  block-size: 0.85rem;
+  inline-size: 0.85rem;
+  opacity: 0.85;
+  transition: transform 120ms ease-in-out;
+}
+
+.sidebar-group__header[aria-expanded="false"] .sidebar-group__arrow {
+  transform: rotate(-90deg);
+}
+
+#sidebar .sidebar-group__count {
+  color: var(--sidebar-fg-subtle);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+#sidebar .sidebar-group__action {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-color: var(--sidebar-fg);
+  --btn-padding: 0.15em 0.1em;
+  --hover-color: var(--sidebar-btn-hover-outline);
+
+  block-size: calc(var(--btn-size) * 0.8);
+  flex-shrink: 0;
+  inline-size: calc(var(--btn-size) * 0.8);
+  min-inline-size: unset;
+  opacity: 0.9;
+}
+
+#sidebar .sidebar-group__action:hover {
+  --btn-background: var(--sidebar-row-hover);
+}
+
+#sidebar .sidebar-group__action img {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
+
+/* `colorize--black` assumes a light page; sidebar chrome is always dark */
+#sidebar .colorize--black {
+  filter: invert(100%);
+}
+
+.sidebar-group__rows {
+  --row-gap: 0.16em;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-row {
+  inline-size: 100%;
   justify-content: start;
-  margin-inline-end: auto;
-  max-inline-size: 100%;
+  max-inline-size: none;
+  margin-inline: 0;
+}
+
+#sidebar .sidebar-row__prefix {
+  align-items: center;
+  color: var(--sidebar-fg-subtle);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.92rem;
+  inline-size: 1.35rem;
+  justify-content: center;
+  text-align: center;
+}
+
+#sidebar .sidebar-row__prefix--dm::before {
+  aspect-ratio: 1;
+  background-color: var(--sidebar-fg-muted);
+  block-size: 0.55rem;
+  border-radius: 999px;
+  content: "";
+  display: block;
+  inline-size: 0.55rem;
+}
+
+/* Peer has this room open (membership `connected?` — same signal as presence in-thread) */
+#sidebar .sidebar-row__prefix--dm-online::before {
+  background-color: var(--color-positive);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+
+#sidebar .sidebar-row__label {
+  color: var(--sidebar-fg-muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+#sidebar .sidebar-row--active .sidebar-row__prefix,
+#sidebar .sidebar-row--active .sidebar-row__label {
+  color: var(--sidebar-row-active-fg);
+}
+
+#sidebar .sidebar-row--active .sidebar-row__prefix--dm::before {
+  background-color: var(--sidebar-row-active-fg);
+}
+
+/* Keep “peer in this chat” green on the active row; only the idle gray dot follows pill contrast */
+#sidebar .sidebar-row--active .sidebar-row__prefix--dm-online::before {
+  background-color: var(--color-positive);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55);
+}
+
+#sidebar .sidebar-group__title {
+  color: var(--sidebar-fg-muted);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Sidebar + search drawer list rows (dark chrome) — channels and DMs share one row block */
+#sidebar .room {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-border-radius: 0.2rem;
+  --btn-color: var(--sidebar-fg);
+  --btn-padding: 0.3rem 0.65rem;
+  --hover-color: var(--sidebar-btn-hover-outline);
+
+  box-shadow: none;
+  color: var(--sidebar-fg-muted);
+  font-size: 0.92rem;
+  font-weight: normal;
+  inline-size: 100%;
+  justify-content: start;
+  margin-inline: 0;
+  max-inline-size: none;
+  min-block-size: 1.9rem;
+  position: relative;
+  text-decoration: none;
 
   .searches-list & {
     border-radius: 0.5em;
   }
 
+  &:focus-within,
+  &:where(:not(:active)):focus-visible {
+    outline: 0;
+  }
+
+  &:where(:not(:active)):hover {
+    --btn-background: var(--sidebar-row-hover);
+  }
+
   &.unread {
-    --btn-border-color: var(--color-text);
-    --hover-color: var(--color-text);
+    color: var(--sidebar-fg);
+    font-weight: 700;
+  }
+}
 
-    font-weight: 600;
+/* `.btn` uses `--btn-background`; do not set `background-color` on `.room` or it overrides the active pill */
+#sidebar .room.sidebar-row--active {
+  --btn-background: var(--sidebar-row-active-bg);
+  --btn-color: var(--sidebar-row-active-fg);
+  --hover-color: transparent;
 
-    &:not(:hover) {
-      box-shadow: 0 0 0 1px var(--color-text);
-    }
+  color: var(--sidebar-row-active-fg);
+}
+
+#sidebar .room.sidebar-row--active.unread {
+  color: var(--sidebar-row-active-fg);
+}
+
+#sidebar .room:visited:not(.sidebar-row--active) {
+  color: var(--sidebar-fg-muted);
+}
+
+/* Nav “recent search” chips stay on the main (light) surface */
+.searches__recents .room {
+  --btn-background: transparent;
+  --btn-border-color: transparent;
+  --btn-border-radius: 0.35em;
+  --btn-padding: 0.22rem 0.55rem;
+
+  background-color: transparent;
+  color: color-mix(in oklab, var(--color-text), var(--color-bg) 22%);
+  font-size: 0.92rem;
+  font-weight: normal;
+  justify-content: start;
+  min-block-size: 1.9rem;
+
+  &:where(:not(:active)):hover {
+    --btn-background: color-mix(in oklab, var(--color-text), var(--color-bg) 90%);
+  }
+
+  &.unread {
+    color: var(--color-text);
+    font-weight: 700;
   }
 }
 
@@ -335,5 +677,24 @@
   ~ .searches__reset {
     display: none;
     visibility: hidden;
+  }
+}
+
+@media (max-width: 100ch) {
+  #sidebar .rooms {
+    --row-gap: 0.85rem;
+    padding-inline: clamp(0.75rem, 3vw, 1.15rem);
+  }
+
+  #sidebar .rooms__search-field {
+    --input-padding: 0.5rem 0.95rem;
+  }
+
+  #sidebar .sidebar-group__header {
+    font-size: 0.78rem;
+  }
+
+  #sidebar .room {
+    --btn-padding: 0.36em 0.55rem;
   }
 }
