@@ -32,7 +32,7 @@ class Room::MessagePusher
 
     def build_direct_payload
       {
-        title: message.creator.name,
+        title: message.creator&.name || room.name,
         body: message.plain_text_body,
         path: Rails.application.routes.url_helpers.room_path(room)
       }
@@ -41,7 +41,7 @@ class Room::MessagePusher
     def build_shared_payload
       {
         title: room.name,
-        body: "#{message.creator.name}: #{message.plain_text_body}",
+        body: message.creator ? "#{message.creator.name}: #{message.plain_text_body}" : message.plain_text_body,
         path: Rails.application.routes.url_helpers.room_path(room)
       }
     end
@@ -55,10 +55,10 @@ class Room::MessagePusher
 
       payload.merge(
         type: "incoming_call",
-        title: room.direct? ? "#{message.creator.name} is calling" : "Incoming call in #{room.name}",
-        body: room.direct? ? "Tap to join the call" : "#{message.creator.name} started a call",
+        title: room.direct? ? "#{message.creator&.name || "Someone"} is calling" : "Incoming call in #{room.name}",
+        body: room.direct? ? "Tap to join the call" : "#{message.creator&.name || "Someone"} started a call",
         call_url: call_url,
-        caller_name: message.creator.name,
+        caller_name: message.creator&.name || "Someone",
         room_name: room.name
       )
     end
@@ -120,16 +120,22 @@ class Room::MessagePusher
     end
 
     def relevant_subscriptions
+      memberships_scope = Membership.visible.disconnected.where(room: room)
+      memberships_scope = memberships_scope.where.not(user_id: message.creator_id) if message.creator_id
+
       Push::Subscription
         .joins(user: :memberships)
-        .merge(Membership.visible.disconnected.where(room: room).where.not(user: message.creator))
+        .merge(memberships_scope)
     end
 
     def relevant_mobile_devices
+      memberships_scope = Membership.visible.where(room: room)
+      memberships_scope = memberships_scope.where.not(user_id: message.creator_id) if message.creator_id
+
       Mobile::Device
         .enabled
         .joins(user: :memberships)
-        .merge(Membership.visible.where(room: room).where.not(user: message.creator))
+        .merge(memberships_scope)
     end
 
     def enqueue_payload_for_delivery(payload, subscriptions)

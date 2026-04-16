@@ -71,6 +71,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     end
 
     message = Message.where(room: first_open).order(:created_at).last
+    assert_nil message.creator_id
     assert_includes message.plain_text_body, "Another Joiner"
     assert_includes message.plain_text_body, "just joined"
   end

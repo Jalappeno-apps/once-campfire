@@ -25,7 +25,7 @@ class AccountMembership < ApplicationRecord
       return unless room
 
       message = room.messages.create!(
-        creator: user,
+        creator: nil,
         body: join_announcement_html
       )
       message.broadcast_create

@@ -69,6 +69,7 @@ body {
   display: flex;
   flex-direction: column;
   grid-area: main;
+  min-block-size: 0;
   overflow: auto;
   position: relative;
 
@@ -81,6 +82,16 @@ body {
       border-inline: 1px solid var(--color-border-darker);
       justify-content: end;
       margin-inline: 5vw 0;
+    }
+  }
+
+  /* Room: keep scroll in `.messages` while the virtual keyboard overlays the bottom (see viewport `overlays-content`) */
+  .sidebar &:has(.messages) {
+    @media (max-width: 100ch) {
+      display: flex;
+      flex-direction: column;
+      max-block-size: 100dvh;
+      overflow: hidden;
     }
   }
 }

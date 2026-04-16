@@ -1,0 +1,10 @@
+<%# locals: (message:) %>
+<h2 class="message__day-separator"><%= local_datetime_tag message.created_at, style: :date %></h2>
+
+<div class="message__system-surface" role="status">
+  <div class="message__system-meta">
+    <%= link_to message_timestamp(message, class: "message__timestamp message__timestamp--system"),
+          room_at_message_path(message.room, message), target: "_top", class: "message__permalink" %>
+  </div>
+  <%= render "messages/presentation", message: message %>
+</div>

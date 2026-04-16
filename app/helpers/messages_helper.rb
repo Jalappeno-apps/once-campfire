@@ -25,20 +25,26 @@ module MessagesHelper
   def message_tag(message, &)
     message_timestamp_milliseconds = message.created_at.to_fs(:epoch)
 
+    data = {
+      user_id: message.creator_id,
+      message_id: message.id,
+      message_timestamp: message_timestamp_milliseconds,
+      message_updated_at: message.updated_at.to_fs(:epoch),
+      sort_value: message_timestamp_milliseconds,
+      messages_target: "message",
+      search_results_target: "message",
+      refresh_room_target: "message",
+      reply_composer_outlet: "#composer"
+    }
+    data[:controller] = "reply" if message.creator_id
+
     tag.div id: dom_id(message),
-      class: "message #{"message--emoji" if message.plain_text_body.all_emoji?}",
-      data: {
-        controller: "reply",
-        user_id: message.creator_id,
-        message_id: message.id,
-        message_timestamp: message_timestamp_milliseconds,
-        message_updated_at: message.updated_at.to_fs(:epoch),
-        sort_value: message_timestamp_milliseconds,
-        messages_target: "message",
-        search_results_target: "message",
-        refresh_room_target: "message",
-        reply_composer_outlet: "#composer"
-      }, &
+      class: [
+        "message",
+        ("message--emoji" if message.plain_text_body.all_emoji?),
+        ("message--system" if message.system?)
+      ].compact.join(" "),
+      data: data, &
   rescue Exception => e
     Sentry.capture_exception(e, extra: { message: message })
     Rails.logger.error "Exception while rendering message #{message.class.name}##{message.id}, failed with: #{e.class} `#{e.message}`"

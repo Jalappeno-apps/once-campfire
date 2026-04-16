@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_04_17_000003) do
+ActiveRecord::Schema[8.2].define(version: 2026_04_17_000004) do
   create_table "account_memberships", force: :cascade do |t|
     t.integer "account_id", null: false
     t.datetime "created_at", null: false
@@ -160,7 +160,7 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_17_000003) do
   create_table "messages", force: :cascade do |t|
     t.string "client_message_id", null: false
     t.datetime "created_at", null: false
-    t.integer "creator_id", null: false
+    t.integer "creator_id"
     t.integer "room_id", null: false
     t.datetime "updated_at", null: false
     t.index ["creator_id"], name: "index_messages_on_creator_id"

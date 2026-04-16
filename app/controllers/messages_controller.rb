@@ -115,7 +115,9 @@ class MessagesController < ApplicationController
 
 
     def deliver_webhooks_to_bots
-      bots_eligible_for_webhook.excluding(@message.creator).each { |bot| bot.deliver_webhook_later(@message) }
+      eligible = bots_eligible_for_webhook
+      eligible = eligible.excluding(@message.creator) if @message.creator
+      eligible.each { |bot| bot.deliver_webhook_later(@message) }
     end
 
     def bots_eligible_for_webhook

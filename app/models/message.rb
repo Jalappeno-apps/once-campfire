@@ -2,7 +2,7 @@ class Message < ApplicationRecord
   include Attachment, Broadcasts, Mentionee, Pagination, Searchable
 
   belongs_to :room, touch: true
-  belongs_to :creator, class_name: "User", default: -> { Current.user }
+  belongs_to :creator, class_name: "User", optional: true, default: -> { Current.user }
 
   has_many :boosts, dependent: :destroy
 
@@ -40,5 +40,9 @@ class Message < ApplicationRecord
     plain_text_body.match(/\A\/play (?<name>\w+)\z/) do |match|
       Sound.find_by_name match[:name]
     end
+  end
+
+  def system?
+    creator_id.nil?
   end
 end

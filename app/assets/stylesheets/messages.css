@@ -74,6 +74,7 @@
   display: grid;
   flex: 1;
   grid-auto-rows: min-content;
+  min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   position: relative;
@@ -631,4 +632,39 @@ img.message__attachment {
 .message__call-invite-calendar {
   inline-size: fit-content;
   --btn-padding: 0.5em 1.1em;
+}
+
+/* System / workspace notices (no author avatar; not “from” the new member) */
+.message.message--system {
+  grid-template-areas:
+    "sep sep sep"
+    "system system system";
+  grid-template-columns: 1fr;
+
+  .message__day-separator {
+    grid-area: sep;
+  }
+
+  .message__system-surface {
+    grid-area: system;
+    justify-self: center;
+    max-inline-size: min(40rem, 100%);
+    padding-block: 0.35rem 0.5rem;
+    padding-inline: var(--content-padding-inline);
+    text-align: center;
+  }
+
+  .message__system-meta {
+    margin-block-end: 0.25rem;
+  }
+
+  .message__timestamp--system {
+    font-size: 0.75rem;
+    opacity: 0.75;
+  }
+
+  .trix-content {
+    color: color-mix(in oklab, var(--color-text) 82%, transparent);
+    font-size: 0.92rem;
+  }
 }

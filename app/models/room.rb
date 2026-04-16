@@ -79,7 +79,9 @@ class Room < ApplicationRecord
 
   private
     def unread_memberships(message)
-      memberships.visible.disconnected.where.not(user: message.creator).update_all(unread_at: message.created_at, updated_at: Time.current)
+      scope = memberships.visible.disconnected
+      scope = scope.where.not(user_id: message.creator_id) if message.creator_id
+      scope.update_all(unread_at: message.created_at, updated_at: Time.current)
     end
 
     def push_later(message)
