@@ -33,6 +33,8 @@ Rails.application.routes.draw do
   post "join/:join_code", to: "users#create"
 
   resources :qr_code, only: :show
+  get "c/:token", to: "calls/invites#show", as: :short_call_invite
+  get "calls/:token", to: "calls/invites#show", as: :call_invite
 
   resources :users, only: :show do
     scope module: "users" do

@@ -3,6 +3,7 @@ module Calls
     DEFAULT_MEET_BASE_URL = "https://meet.daiwick.com".freeze
     DEFAULT_JITSI_JWT_AUDIENCE = "jitsi".freeze
     DEFAULT_TOKEN_TTL_SECONDS = 2.hours.to_i
+    DEFAULT_CALL_INVITE_TTL_SECONDS = 2.hours.to_i
 
     class << self
       def meet_base_url
@@ -37,6 +38,12 @@ module Calls
         raw_value = ENV["JITSI_JWT_TTL_SECONDS"].to_s.strip
         value = raw_value.to_i
         value.positive? ? value : DEFAULT_TOKEN_TTL_SECONDS
+      end
+
+      def call_invite_ttl_seconds
+        raw_value = ENV["CALL_INVITE_TTL_SECONDS"].to_s.strip
+        value = raw_value.to_i
+        value.positive? ? value : DEFAULT_CALL_INVITE_TTL_SECONDS
       end
 
       def jwt_enabled?

@@ -67,8 +67,10 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "/meet", client_message_id: 999 } }
 
     message = Message.last
-    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+\z/, message.plain_text_body)
-    assert_includes message.plain_text_body, "-#{@room.id}-"
+    assert_match(/\AJoin call: http:\/\/once\.campfire\.test\/c\/[a-z0-9]+[[:space:]\u00A0]*\z/, message.plain_text_body)
+    invite = Calls::Invite.last
+    assert_equal "Join call: #{short_call_invite_url(token: invite.token)}", message.plain_text_body
+    assert_includes invite.destination_url, "-#{@room.id}-"
   end
 
   test "creating a /meet message transforms from rich-text html payload" do
@@ -77,8 +79,8 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     }
 
     message = Message.last
-    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+\z/, message.plain_text_body)
-    assert_includes message.plain_text_body, "-#{@room.id}-"
+    assert_match(/\AJoin call: http:\/\/once\.campfire\.test\/c\/[a-z0-9]+[[:space:]\u00A0]*\z/, message.plain_text_body)
+    assert_includes Calls::Invite.last.destination_url, "-#{@room.id}-"
   end
 
   test "creating a /meet message renders call invite action button" do
@@ -96,7 +98,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     } }
 
     message = Message.last
-    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+ @Jason\z/, message.plain_text_body)
+    assert_match(/\AJoin call: http:\/\/once\.campfire\.test\/c\/[a-z0-9]+ @Jason\z/, message.plain_text_body)
     assert_includes message.mentionees.ids, users(:jason).id
   end
 

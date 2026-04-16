@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_04_16_095000) do
+ActiveRecord::Schema[8.2].define(version: 2026_04_16_181500) do
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "custom_styles"
@@ -77,6 +77,20 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_095000) do
     t.datetime "updated_at", null: false
     t.index ["booster_id"], name: "index_boosts_on_booster_id"
     t.index ["message_id"], name: "index_boosts_on_message_id"
+  end
+
+  create_table "calls_invites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "creator_id", null: false
+    t.text "destination_url", null: false
+    t.datetime "expires_at", null: false
+    t.integer "room_id", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_calls_invites_on_creator_id"
+    t.index ["expires_at"], name: "index_calls_invites_on_expires_at"
+    t.index ["room_id"], name: "index_calls_invites_on_room_id"
+    t.index ["token"], name: "index_calls_invites_on_token", unique: true
   end
 
   create_table "memberships", force: :cascade do |t|
@@ -179,10 +193,11 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_16_095000) do
     t.index ["user_id"], name: "index_webhooks_on_user_id"
   end
 
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "bans", "users"
   add_foreign_key "boosts", "messages"
+  add_foreign_key "calls_invites", "rooms"
+  add_foreign_key "calls_invites", "users", column: "creator_id"
   add_foreign_key "messages", "rooms"
   add_foreign_key "messages", "users", column: "creator_id"
   add_foreign_key "mobile_devices", "users"

@@ -113,7 +113,7 @@ module MessagesHelper
       call_link = trusted_call_link_from(content)
       return linked_content unless call_link
 
-      safe_join([linked_content, call_invite_card(call_link)])
+      safe_join([ linked_content, call_invite_card(call_link) ])
     end
 
     def trusted_call_link_from(content)

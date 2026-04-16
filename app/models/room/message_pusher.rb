@@ -47,7 +47,9 @@ class Room::MessagePusher
     end
 
     def with_call_metadata(payload)
-      call_url = Calls::InviteLinkExtractor.call(message.plain_text_body)
+      call_link = Calls::InviteLinkExtractor.call(message.plain_text_body)
+      return payload unless call_link
+      call_url = Calls::InviteUrlResolver.call(call_link)
       return payload unless call_url
 
       payload.merge(
