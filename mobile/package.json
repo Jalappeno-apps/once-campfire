@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "babel-preset-expo": "^55.0.17",
     "typescript": "^5.8.2"
   }
 }

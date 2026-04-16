@@ -16,8 +16,13 @@
     "android": {
       "package": "com.jalappeno.campfiremobile",
       "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
+        "INTERNET"
+      ],
       "adaptiveIcon": {
-        "foregroundImage": "./logo.png",
+        "foregroundImage": "./logo-adaptive-foreground.png",
         "backgroundColor": "#ffffff"
       }
     },
