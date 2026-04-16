@@ -57,7 +57,7 @@ module MessagesHelper
     when "sound"
       message_sound_presentation(message)
     else
-      auto_link h(ContentFilters::TextMessagePresentationFilters.apply(message.body.body)), html: { target: "_blank" }
+      text_message_presentation(message)
     end
   rescue Exception => e
     Sentry.capture_exception(e, extra: { message: message })
@@ -105,5 +105,32 @@ module MessagesHelper
 
     def message_author_title(author)
       [ author.name, author.bio ].compact_blank.join(" – ")
+    end
+
+    def text_message_presentation(message)
+      content = ContentFilters::TextMessagePresentationFilters.apply(message.body.body)
+      linked_content = auto_link h(content), html: { target: "_blank" }
+      call_link = trusted_call_link_from(content)
+      return linked_content unless call_link
+
+      safe_join([linked_content, call_invite_card(call_link)])
+    end
+
+    def trusted_call_link_from(content)
+      Calls::InviteLinkExtractor.call(content)
+    end
+
+    def trusted_call_hosts
+      Calls::Configuration.trusted_hosts
+    end
+
+    def call_invite_card(call_link)
+      tag.div class: "message__call-invite" do
+        safe_join([
+          tag.div("Video call", class: "message__call-invite-title"),
+          tag.div(call_link, class: "message__call-invite-link"),
+          link_to("Join call", call_link, class: "btn btn--reversed message__call-invite-btn")
+        ])
+      end
     end
 end

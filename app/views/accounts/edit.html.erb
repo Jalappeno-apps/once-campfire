@@ -72,13 +72,13 @@
         </div>
         <%= form.fields_for :settings, @account.settings do |settings_form| %>
           <%= settings_form.hidden_field :restrict_room_creation_to_administrators,
-              value: !Current.account.settings.restrict_room_creation_to_administrators? %>
+              value: !@account.settings.restrict_room_creation_to_administrators? %>
         <% end %>
 
         <label class="switch">
           <input type="checkbox"
                 class="switch__input"
-                <%= "checked" if Current.account.settings.restrict_room_creation_to_administrators? %>
+                <%= "checked" if @account.settings.restrict_room_creation_to_administrators? %>
                 data-action="change->form#submit">
           <span class="switch__btn round"></span>
           <span class="for-screen-reader">

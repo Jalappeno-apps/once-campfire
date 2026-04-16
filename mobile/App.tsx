@@ -10,6 +10,8 @@ import {
   AppState,
   Image,
   Linking,
+  PermissionsAndroid,
+  Vibration,
   useColorScheme,
   ScrollView,
   StyleSheet,
@@ -28,6 +30,21 @@ const APP_LOGO = require("./logo.png");
 const STORAGE_KEYS = {
   domain: "campfire.mobile.domain"
 } as const;
+const CALL_NOTIFICATION_CATEGORY_ID = "incoming_call";
+const CALL_ACTION_ACCEPT = "accept_call";
+const CALL_ACTION_DECLINE = "decline_call";
+const INCOMING_CALL_VIBRATION_PATTERN = [0, 750, 450, 750];
+
+async function configureCallNotificationActions(): Promise<void> {
+  await Notifications.setNotificationCategoryAsync(CALL_NOTIFICATION_CATEGORY_ID, [
+    { identifier: CALL_ACTION_ACCEPT, buttonTitle: "Accept", options: { opensAppToForeground: true } },
+    {
+      identifier: CALL_ACTION_DECLINE,
+      buttonTitle: "Decline",
+      options: { isDestructive: true, opensAppToForeground: false }
+    }
+  ]);
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -71,6 +88,32 @@ function extractNotificationPath(response: Notifications.NotificationResponse | 
   return typeof data?.path === "string" ? data.path : null;
 }
 
+type IncomingCallPayload = {
+  callUrl: string;
+  title: string;
+  body: string;
+  path: string | null;
+};
+
+function extractIncomingCallPayload(content: {
+  title?: string | null;
+  body?: string | null;
+  data?: Record<string, unknown> | null;
+} | null): IncomingCallPayload | null {
+  if (!content) return null;
+  const data = content.data ?? {};
+  if (data.type !== "incoming_call") return null;
+  if (typeof data.call_url !== "string" || !data.call_url) return null;
+
+  const path = typeof data.path === "string" && data.path ? data.path : null;
+  return {
+    callUrl: data.call_url,
+    title: typeof content.title === "string" && content.title ? content.title : "Incoming call",
+    body: typeof content.body === "string" && content.body ? content.body : "Join call",
+    path
+  };
+}
+
 function resolveNotificationUrl(domain: string, rawPath: string): string | null {
   const trimmed = rawPath.trim();
   if (!trimmed) return null;
@@ -86,14 +129,47 @@ function resolveNotificationUrl(domain: string, rawPath: string): string | null 
   }
 }
 
+function resolveTrustedCallUrl(rawUrl: string, trustedHosts: string[]): string | null {
+  if (!rawUrl) return null;
+  try {
+    const parsed = new URL(rawUrl);
+    return trustedHosts.includes(parsed.hostname) ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureCallPermissions(): Promise<boolean> {
+  if (Platform.OS !== "android") return true;
+
+  const requiredPermissions = [
+    PermissionsAndroid.PERMISSIONS.CAMERA,
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+  ];
+
+  const checks = await Promise.all(requiredPermissions.map((permission) => PermissionsAndroid.check(permission)));
+  if (checks.every(Boolean)) return true;
+
+  const requested = await PermissionsAndroid.requestMultiple(requiredPermissions);
+  return requiredPermissions.every((permission) => requested[permission] === PermissionsAndroid.RESULTS.GRANTED);
+}
+
 async function registerForPushTokenAsync(): Promise<string | null> {
   if (!Device.isDevice) return null;
   if (Constants.appOwnership === "expo") return null;
+
+  await configureCallNotificationActions();
 
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
       importance: Notifications.AndroidImportance.MAX
+    });
+    await Notifications.setNotificationChannelAsync("calls", {
+      name: "Calls",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 900, 400, 900, 400, 900],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC
     });
   }
 
@@ -154,19 +230,79 @@ function AppContent() {
   const [currentWebUrl, setCurrentWebUrl] = useState("");
   const [pendingNotificationPath, setPendingNotificationPath] = useState<string | null>(null);
   const [webViewSourceUrl, setWebViewSourceUrl] = useState<string | null>(null);
+  const [activeCallUrl, setActiveCallUrl] = useState<string | null>(null);
+  const [incomingCall, setIncomingCall] = useState<IncomingCallPayload | null>(null);
+  const [webViewError, setWebViewError] = useState<string | null>(null);
+  const [trustedCallHosts, setTrustedCallHosts] = useState<string[]>(["meet.jit.si"]);
   const webViewRef = useRef<WebView>(null);
   const shouldShowServerButton = useMemo(() => {
-    return !showSettings && isSettingsLikePath(currentWebUrl);
-  }, [showSettings, currentWebUrl]);
+    return !showSettings && (Boolean(webViewError) || isSettingsLikePath(currentWebUrl));
+  }, [showSettings, webViewError, currentWebUrl]);
+
+  const tryOpenCallUrl = useCallback((rawUrl: string): boolean => {
+    const callUrl = resolveTrustedCallUrl(rawUrl, trustedCallHosts);
+    if (!callUrl) return false;
+
+    void (async () => {
+      const granted = await ensureCallPermissions();
+      if (!granted) {
+        Alert.alert(
+          "Camera and microphone required",
+          "Allow camera and microphone access to join calls.",
+          [
+            { text: "Not now", style: "cancel" },
+            { text: "Open app settings", onPress: () => void Linking.openSettings() }
+          ]
+        );
+        return;
+      }
+
+      setShowSettings(false);
+      setActiveCallUrl(callUrl);
+      setIncomingCall(null);
+    })();
+
+    return true;
+  }, [trustedCallHosts]);
 
   const navigateWebViewToUrl = useCallback((targetUrl: string) => {
+    if (tryOpenCallUrl(targetUrl)) return;
+
     setShowSettings(false);
+    setWebViewError(null);
     setWebViewSourceUrl(targetUrl);
     setCurrentWebUrl(targetUrl);
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript(`window.location.assign(${JSON.stringify(targetUrl)}); true;`);
     }
-  }, []);
+  }, [tryOpenCallUrl]);
+
+  const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse | null): boolean => {
+    if (!response) return false;
+
+    const callPayload = extractIncomingCallPayload(response.notification.request.content as {
+      title?: string | null;
+      body?: string | null;
+      data?: Record<string, unknown> | null;
+    });
+
+    if (!callPayload) return false;
+
+    if (response.actionIdentifier === CALL_ACTION_DECLINE) {
+      setIncomingCall(null);
+      return true;
+    }
+
+    if (response.actionIdentifier === CALL_ACTION_ACCEPT) {
+      setIncomingCall(callPayload);
+      const didOpen = tryOpenCallUrl(callPayload.callUrl);
+      if (!didOpen && callPayload.path) setPendingNotificationPath(callPayload.path);
+      return true;
+    }
+
+    setIncomingCall(callPayload);
+    return true;
+  }, [tryOpenCallUrl]);
 
   const refreshAuthSession = useCallback(async () => {
     if (!domain) return;
@@ -189,8 +325,12 @@ function AppContent() {
 
       if (!response.ok) return;
 
-      const payload = (await response.json()) as { user_id?: number };
+      const payload = (await response.json()) as { user_id?: number; trusted_call_hosts?: unknown };
       setAuthUserId(typeof payload.user_id === "number" ? payload.user_id : null);
+      if (Array.isArray(payload.trusted_call_hosts)) {
+        const safeHosts = payload.trusted_call_hosts.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+        if (safeHosts.length > 0) setTrustedCallHosts(safeHosts);
+      }
     } catch {
       // Ignore transient network failures and keep current auth state.
     }
@@ -213,6 +353,10 @@ function AppContent() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    void configureCallNotificationActions();
   }, []);
 
   useEffect(() => {
@@ -239,20 +383,33 @@ function AppContent() {
     (async () => {
       const initialResponse = await Notifications.getLastNotificationResponseAsync();
       if (!mounted) return;
+      if (handleNotificationResponse(initialResponse)) return;
       const initialPath = extractNotificationPath(initialResponse);
       if (initialPath) setPendingNotificationPath(initialPath);
     })();
 
+    const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
+      const callPayload = extractIncomingCallPayload(notification.request.content as {
+        title?: string | null;
+        body?: string | null;
+        data?: Record<string, unknown> | null;
+      });
+      if (callPayload) setIncomingCall(callPayload);
+    });
+
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      if (handleNotificationResponse(response)) return;
+
       const path = extractNotificationPath(response);
       if (path) setPendingNotificationPath(path);
     });
 
     return () => {
       mounted = false;
+      receivedSub.remove();
       responseSub.remove();
     };
-  }, []);
+  }, [handleNotificationResponse]);
 
   useEffect(() => {
     if (!domain || !pendingNotificationPath) return;
@@ -260,6 +417,23 @@ function AppContent() {
     if (targetUrl) navigateWebViewToUrl(targetUrl);
     setPendingNotificationPath(null);
   }, [domain, pendingNotificationPath, navigateWebViewToUrl]);
+
+  useEffect(() => {
+    if (!incomingCall || activeCallUrl) {
+      Vibration.cancel();
+      return;
+    }
+
+    Vibration.vibrate(INCOMING_CALL_VIBRATION_PATTERN);
+    const interval = setInterval(() => {
+      Vibration.vibrate(INCOMING_CALL_VIBRATION_PATTERN);
+    }, 2400);
+
+    return () => {
+      clearInterval(interval);
+      Vibration.cancel();
+    };
+  }, [incomingCall, activeCallUrl]);
 
   const ensurePushRegistration = useCallback(async () => {
     if (!authUserId) {
@@ -377,6 +551,7 @@ function AppContent() {
     await AsyncStorage.setItem(STORAGE_KEYS.domain, normalized);
     setDomain(normalized);
     setWebViewSourceUrl(normalized);
+    setWebViewError(null);
     setShowSettings(false);
   }
 
@@ -395,6 +570,44 @@ function AppContent() {
 
   function handleWebViewLoadEnd() {
     void refreshAuthSession();
+  }
+
+  function handleWebViewError(event: { nativeEvent?: { description?: string } }) {
+    const description = event.nativeEvent?.description?.trim();
+    setWebViewError(description || "Could not load your Campfire domain. Check the server URL and try again.");
+    setShowSettings(true);
+  }
+
+  function handleShouldStartLoad(request: { url: string }): boolean {
+    if (!domain) return true;
+
+    if (tryOpenCallUrl(request.url)) return false;
+
+    try {
+      const requestedUrl = new URL(request.url);
+      const appOrigin = new URL(domain).origin;
+      // Keep browsing constrained to the configured Campfire domain.
+      return requestedUrl.origin === appOrigin;
+    } catch {
+      return false;
+    }
+  }
+
+  function handleOpenWindow(event: { nativeEvent?: { targetUrl?: string } }) {
+    const targetUrl = event.nativeEvent?.targetUrl;
+    if (!targetUrl) return;
+
+    if (tryOpenCallUrl(targetUrl)) return;
+
+    try {
+      const appOrigin = domain ? new URL(domain).origin : null;
+      const requestedUrl = new URL(targetUrl);
+      if (appOrigin && requestedUrl.origin === appOrigin) {
+        navigateWebViewToUrl(targetUrl);
+      }
+    } catch {
+      // Ignore malformed popup targets.
+    }
   }
 
   if (loading) {
@@ -462,6 +675,11 @@ function AppContent() {
           </View>
 
           <Text style={[styles.settingsTitle, { color: colors.text }]}>App settings</Text>
+          {webViewError && (
+            <Text style={[styles.errorText, { color: "#c0392b" }]}>
+              {webViewError}
+            </Text>
+          )}
 
           <Text style={[styles.label, { color: colors.text }]}>Campfire domain</Text>
           <TextInput
@@ -504,7 +722,9 @@ function AppContent() {
           source={{ uri: webViewSourceUrl ?? domain }}
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
-          userAgent="CampfireMobileApp/1.0"
+          setSupportMultipleWindows
+          onOpenWindow={handleOpenWindow}
+          onShouldStartLoadWithRequest={handleShouldStartLoad}
           injectedJavaScriptBeforeContentLoaded={`
             window.__CAMPFIRE_NATIVE_APP__ = true;
             window.__CAMPFIRE_NATIVE_APP_PLATFORM__ = "react-native";
@@ -525,8 +745,69 @@ function AppContent() {
           onMessage={handleWebViewMessage}
           onNavigationStateChange={(navState) => setCurrentWebUrl(navState.url)}
           onLoadEnd={handleWebViewLoadEnd}
+          onError={handleWebViewError}
+          onHttpError={() => handleWebViewError({})}
         />
       </View>
+
+      {activeCallUrl && (
+        <View style={styles.callOverlay}>
+          <View
+            style={[
+              styles.callHeader,
+              {
+                backgroundColor: colors.surface,
+                borderBottomColor: colors.border,
+                paddingTop: Math.max(insets.top + 8, 14)
+              }
+            ]}
+          >
+            <Text style={[styles.callTitle, { color: colors.text }]}>Call in progress</Text>
+            <TouchableOpacity
+              style={[styles.buttonSecondary, styles.callCloseButton, { borderColor: colors.primary }]}
+              onPress={() => setActiveCallUrl(null)}
+            >
+              <Text style={[styles.buttonSecondaryLabel, { color: colors.primary }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          <WebView
+            source={{ uri: activeCallUrl }}
+            javaScriptEnabled
+            domStorageEnabled
+            mediaPlaybackRequiresUserAction={false}
+            allowsInlineMediaPlayback
+            allowsFullscreenVideo
+            mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+            setSupportMultipleWindows={false}
+          />
+        </View>
+      )}
+
+      {incomingCall && !activeCallUrl && (
+        <View style={styles.incomingCallOverlay}>
+          <View style={[styles.incomingCallCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.incomingCallTitle, { color: colors.text }]}>{incomingCall.title}</Text>
+            <Text style={[styles.incomingCallBody, { color: colors.subtext }]}>{incomingCall.body}</Text>
+            <View style={styles.incomingCallActions}>
+              <TouchableOpacity
+                style={[styles.buttonSecondary, styles.incomingCallDeclineButton, { borderColor: colors.border }]}
+                onPress={() => setIncomingCall(null)}
+              >
+                <Text style={[styles.buttonSecondaryLabel, { color: colors.text }]}>Dismiss</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.incomingCallAcceptButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  const didOpen = tryOpenCallUrl(incomingCall.callUrl);
+                  if (!didOpen && incomingCall.path) navigateWebViewToUrl(incomingCall.path);
+                }}
+              >
+                <Text style={[styles.buttonLabel, { color: colors.primaryText }]}>Join now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -564,6 +845,10 @@ const styles = StyleSheet.create({
   helperText: {
     color: "#5a6270",
     marginBottom: 10
+  },
+  errorText: {
+    fontSize: 13,
+    marginBottom: 8
   },
   input: {
     borderWidth: 1,
@@ -684,6 +969,60 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#2f3440",
     marginBottom: 8
+  },
+  callOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    backgroundColor: "#000"
+  },
+  callHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  callTitle: {
+    fontSize: 14,
+    fontWeight: "700"
+  },
+  callCloseButton: {
+    marginBottom: 0,
+    paddingVertical: 6,
+    paddingHorizontal: 10
+  },
+  incomingCallOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 30,
+    justifyContent: "flex-end",
+    padding: 16,
+    backgroundColor: "rgba(0,0,0,0.25)"
+  },
+  incomingCallCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14
+  },
+  incomingCallTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 4
+  },
+  incomingCallBody: {
+    fontSize: 13,
+    marginBottom: 12
+  },
+  incomingCallActions: {
+    flexDirection: "row",
+    gap: 10
+  },
+  incomingCallDeclineButton: {
+    flex: 1,
+    marginBottom: 0
+  },
+  incomingCallAcceptButton: {
+    flex: 1
   },
   webviewWrap: {
     flex: 1,

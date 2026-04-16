@@ -593,3 +593,30 @@ img.message__attachment {
     inline-size: 1.4em;
   }
 }
+
+.message__call-invite {
+  margin-top: 0.66rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 0.66em;
+  background: color-mix(in oklab, var(--color-message-bg), var(--color-bg) 15%);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.message__call-invite-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.message__call-invite-link {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.message__call-invite-btn {
+  inline-size: fit-content;
+}

@@ -63,6 +63,12 @@ export default class extends Controller {
     }
   }
 
+  startMeetCall(event) {
+    event.preventDefault()
+    this.replaceMessageContent("/meet")
+    this.submit(event)
+  }
+
   filePicked(event) {
     for (const file of event.target.files) {
       this.#files.push(file)

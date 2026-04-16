@@ -94,6 +94,17 @@
   }
 }
 
+.composer__call-btn {
+  --hover-filter: brightness(0.85);
+
+  @media (any-hover: hover) {
+    &:where(:not(:active):hover) {
+      filter: var(--hover-filter);
+      box-shadow: none;
+    }
+  }
+}
+
 @media (min-width: 100ch) and (any-hover: hover) and (pointer: fine) {
   .composer__rich-text-btn {
     display: inline-flex;

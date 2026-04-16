@@ -55,6 +55,19 @@ It includes:
 - rollback process with tagged images
 - guidance for adding mobile push and future calls/video with minimal merge pain
 
+## Jitsi token auth (secure rooms)
+
+To lock rooms so only Campfire-issued links can create/join calls on your Jitsi host, set:
+
+- `MEET_BASE_URL` - your Jitsi base URL (for example `https://meet.daiwick.com`)
+- `JITSI_JWT_APP_ID` - Jitsi token issuer/app ID
+- `JITSI_JWT_APP_SECRET` - shared signing secret used by Jitsi token verification
+- `JITSI_JWT_AUDIENCE` - optional, defaults to `jitsi`
+- `JITSI_JWT_SUBJECT` - optional, defaults to host from `MEET_BASE_URL`
+- `JITSI_JWT_TTL_SECONDS` - optional, defaults to `7200`
+
+When `JITSI_JWT_APP_ID` and `JITSI_JWT_APP_SECRET` are set, `/meet` links include a signed `jwt` query parameter.
+
 ## Running in development
 
     bin/setup

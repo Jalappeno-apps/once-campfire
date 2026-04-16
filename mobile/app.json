@@ -16,10 +16,14 @@
     "android": {
       "package": "com.jalappeno.campfiremobile",
       "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true,
       "permissions": [
         "POST_NOTIFICATIONS",
         "VIBRATE",
-        "INTERNET"
+        "INTERNET",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./logo-adaptive-foreground.png",

@@ -7,7 +7,7 @@
 
     <%= form_with url: session_url, class: "flex flex-column gap" do |form| %>
       <fieldset class="flex flex-column gap center-block upad">
-        <legend class="txt-large txt-align-center"><strong><%= Current.account.name %></strong></legend>
+        <legend class="txt-large txt-align-center"><strong><%= Current.account&.name || "Campfire" %></strong></legend>
 
         <div class="flex align-center gap">
           <%= translation_button(:email_address) %>

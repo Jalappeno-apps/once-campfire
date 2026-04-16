@@ -7,20 +7,27 @@ class Room::MessagePusher
 
   def push
     build_payload.tap do |payload|
-      push_to_users_involved_in_everything(payload)
-      push_to_users_involved_in_mentions(payload)
-      push_to_mobile_users_involved_in_everything(payload)
-      push_to_mobile_users_involved_in_mentions(payload)
+      if targeted_call_invite?(payload)
+        push_to_targeted_call_users(payload)
+        push_to_targeted_mobile_call_users(payload)
+      else
+        push_to_users_involved_in_everything(payload)
+        push_to_users_involved_in_mentions(payload)
+        push_to_mobile_users_involved_in_everything(payload)
+        push_to_mobile_users_involved_in_mentions(payload)
+      end
     end
   end
 
   private
     def build_payload
-      if room.direct?
+      base_payload = if room.direct?
         build_direct_payload
       else
         build_shared_payload
       end
+
+      with_call_metadata(base_payload)
     end
 
     def build_direct_payload
@@ -39,6 +46,20 @@ class Room::MessagePusher
       }
     end
 
+    def with_call_metadata(payload)
+      call_url = Calls::InviteLinkExtractor.call(message.plain_text_body)
+      return payload unless call_url
+
+      payload.merge(
+        type: "incoming_call",
+        title: room.direct? ? "#{message.creator.name} is calling" : "Incoming call in #{room.name}",
+        body: room.direct? ? "Tap to join the call" : "#{message.creator.name} started a call",
+        call_url: call_url,
+        caller_name: message.creator.name,
+        room_name: room.name
+      )
+    end
+
     def push_to_users_involved_in_everything(payload)
       enqueue_payload_for_delivery payload, push_subscriptions_for_users_involved_in_everything
     end
@@ -55,6 +76,14 @@ class Room::MessagePusher
       enqueue_mobile_payload_for_delivery payload, mobile_devices_for_mentionable_users(message.mentionees)
     end
 
+    def push_to_targeted_call_users(payload)
+      enqueue_payload_for_delivery payload, push_subscriptions_for_targeted_call_users
+    end
+
+    def push_to_targeted_mobile_call_users(payload)
+      enqueue_mobile_payload_for_delivery payload, mobile_devices_for_targeted_call_users
+    end
+
     def push_subscriptions_for_users_involved_in_everything
       relevant_subscriptions.merge(Membership.involved_in_everything)
     end
@@ -69,6 +98,18 @@ class Room::MessagePusher
 
     def mobile_devices_for_mentionable_users(mentionees)
       relevant_mobile_devices.merge(Membership.involved_in_mentions).where(user_id: mentionees.ids)
+    end
+
+    def push_subscriptions_for_targeted_call_users
+      relevant_subscriptions.where(user_id: message.mentionees.select(:id))
+    end
+
+    def mobile_devices_for_targeted_call_users
+      relevant_mobile_devices.where(user_id: message.mentionees.select(:id))
+    end
+
+    def targeted_call_invite?(payload)
+      payload[:type] == "incoming_call" && message.mentionees.exists?
     end
 
     def relevant_subscriptions

@@ -65,6 +65,46 @@ class Mobile::Push::DeliveryClientTest < ActiveSupport::TestCase
     )
   end
 
+  test "sends high-priority metadata for incoming calls" do
+    ENV["MOBILE_PUSH_DELIVERY_URL"] = ""
+
+    device = Mobile::Device.create!(
+      user: users(:jason),
+      expo_push_token: "ExponentPushToken[test-device-incoming-call]",
+      platform: "android",
+      device_name: "Pixel"
+    )
+
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+    response.stubs(:body).returns({ data: [] }.to_json)
+
+    http = mock("net-http")
+    http.expects(:request).with do |request|
+      body = JSON.parse(request.body).first
+      body["priority"] == "high" &&
+        body["channelId"] == "calls" &&
+        body["categoryId"] == "incoming_call" &&
+        body["categoryIdentifier"] == "incoming_call" &&
+        body["data"]["type"] == "incoming_call" &&
+        body["data"]["call_url"] == "https://meet.jit.si/call-room"
+    end.returns(response)
+
+    Net::HTTP.expects(:start).with("exp.host", 443, use_ssl: true).yields(http)
+
+    Mobile::Push::DeliveryClient.deliver(
+      payload: {
+        title: "Incoming call",
+        body: "Ritwick is calling",
+        path: "/rooms/1",
+        type: "incoming_call",
+        call_url: "https://meet.jit.si/call-room",
+        caller_name: "Ritwick",
+        room_name: "General"
+      },
+      devices: Mobile::Device.where(id: device.id)
+    )
+  end
+
   private
     def reset_endpoint_cache
       singleton_class = Mobile::Push::DeliveryClient.singleton_class

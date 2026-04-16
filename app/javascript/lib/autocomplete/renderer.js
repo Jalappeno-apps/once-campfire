@@ -25,10 +25,15 @@ export class Renderer {
   }
 
   renderAutocompletable(autocompletable) {
+    const avatar =
+      autocompletable.avatar_url
+        ? `<img src="${autocompletable.avatar_url}" class="automcomplete__avatar" role="presentation" />`
+        : `<span role="presentation">${autocompletable.icon || "•"}</span>`
+
     const html = `
       <button class="autocomplete__btn btn btn--borderless btn--transparent min-width flex-item-grow justify-start" data-value="${autocompletable.value}">
         <span class="avatar">
-          <img src="${autocompletable.avatar_url}" class="automcomplete__avatar" role="presentation" />
+          ${avatar}
         </span>
         <span class="autocompletable__name">${autocompletable.name}</span>
         <a href="#" class="autocompletable__unselect" aria-label="Remove ${autocompletable.name}" data-behavior="unselect_autocompletable">×</a>

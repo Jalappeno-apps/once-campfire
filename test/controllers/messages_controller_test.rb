@@ -63,6 +63,43 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "creating a /meet message transforms into call invite link" do
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "/meet", client_message_id: 999 } }
+
+    message = Message.last
+    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+\z/, message.plain_text_body)
+    assert_includes message.plain_text_body, "-#{@room.id}-"
+  end
+
+  test "creating a /meet message transforms from rich-text html payload" do
+    post room_messages_url(@room, format: :turbo_stream), params: {
+      message: { body: "<div>/meet&nbsp;</div>", client_message_id: 999 }
+    }
+
+    message = Message.last
+    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+\z/, message.plain_text_body)
+    assert_includes message.plain_text_body, "-#{@room.id}-"
+  end
+
+  test "creating a /meet message renders call invite action button" do
+    post room_messages_url(@room, format: :turbo_stream), params: { message: { body: "/meet", client_message_id: 999 } }
+
+    assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
+      assert_select ".message__call-invite", count: 1
+      assert_select ".message__call-invite-btn", text: "Join call"
+    end
+  end
+
+  test "creating a targeted /meet message preserves mention attachments" do
+    post room_messages_url(@room, format: :turbo_stream), params: { message: {
+      body: "<div>/meet #{mention_attachment_for(:jason)}</div>", client_message_id: 999
+    } }
+
+    message = Message.last
+    assert_match(/\AJoin call: https:\/\/meet\.jit\.si\/\S+ @Jason\z/, message.plain_text_body)
+    assert_includes message.mentionees.ids, users(:jason).id
+  end
+
   test "update updates a message belonging to the user" do
     message = @room.messages.where(creator: users(:david)).first
 

@@ -34,7 +34,7 @@ The app stores this as `https://chat.example.com`.
 
 You still need backend support to deliver APNs/FCM/native pushes. Next step:
 
-1. Ensure device token registration succeeds on sign-in.
+1. Ensure device token registratiookn.
 2. Trigger push when Campfire receives new events.
 3. Monitor provider ticket errors in server logs.
 
@@ -59,3 +59,9 @@ Backend delivery URL is configurable via:
 `MOBILE_PUSH_DELIVERY_URL`
 
 If unset, backend defaults to Expo Push API endpoint.
+
+## 7) In-app calls
+
+- Room message `/meet` creates a unique Jitsi call invite link.
+- In the native app, trusted call links (`https://meet.jit.si/...`) open inside the app.
+- External links that are not on the Campfire domain or trusted call host are blocked from opening in the wrapper.

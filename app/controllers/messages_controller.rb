@@ -19,7 +19,7 @@ class MessagesController < ApplicationController
 
   def create
     set_room
-    @message = @room.messages.create_with_attachment!(message_params)
+    @message = @room.messages.create_with_attachment!(normalized_message_params)
 
     @message.broadcast_create
     deliver_webhooks_to_bots
@@ -46,6 +46,12 @@ class MessagesController < ApplicationController
   end
 
   private
+    def normalized_message_params
+      attrs = message_params.to_h.symbolize_keys
+      attrs[:body] = meet_invite_message(attrs[:body]) if meet_command?(attrs[:body])
+      attrs
+    end
+
     def set_message
       @message = @room.messages.find(params[:id])
     end
@@ -69,6 +75,17 @@ class MessagesController < ApplicationController
 
     def message_params
       params.require(:message).permit(:body, :attachment, :client_message_id)
+    end
+
+    def meet_command?(raw_body)
+      text = ActionText::Content.new(raw_body.to_s).to_plain_text
+      text = text.unicode_normalize.gsub(/\p{Space}+/, " ").strip
+      text.match?(%r{\A/meet(?:\s+.*)?\z}i)
+    end
+
+    def meet_invite_message(raw_body)
+      invite_prefix = "Join call: #{Calls::MeetLinkBuilder.call(room: @room, creator: Current.user)}"
+      raw_body.to_s.sub(%r{/meet}i, invite_prefix)
     end
 
 

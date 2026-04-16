@@ -6,13 +6,25 @@ module Mobile
       class << self
         def deliver(payload:, devices:)
           messages = devices.pluck(:expo_push_token).uniq.map do |token|
-            {
+            message = {
               to: token,
               sound: "default",
               title: payload[:title],
               body: payload[:body],
-              data: { path: payload[:path] }
+              data: data_payload(payload)
             }
+
+            if payload[:type] == "incoming_call"
+              message.merge!(
+                priority: "high",
+                ttl: 120,
+                channelId: "calls",
+                categoryId: "incoming_call",
+                categoryIdentifier: "incoming_call"
+              )
+            end
+
+            message
           end
 
           if messages.empty?
@@ -66,6 +78,16 @@ module Mobile
               "accept" => "application/json",
               "content-type" => "application/json"
             }
+          end
+
+          def data_payload(payload)
+            {
+              path: payload[:path],
+              type: payload[:type],
+              call_url: payload[:call_url],
+              caller_name: payload[:caller_name],
+              room_name: payload[:room_name]
+            }.compact
           end
 
           def log_ticket_errors(response)

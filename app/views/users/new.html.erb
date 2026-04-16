@@ -20,7 +20,7 @@
       <fieldset class="flex flex-column center-block">
         <legend class="txt-align-center flex gap">
           <%= account_logo_tag %>
-          <strong class="txt-large"><%= Current.account.name %></strong>
+          <strong class="txt-large"><%= Current.account&.name || "Campfire" %></strong>
         </legend>
 
         <label class="align-center center avatar__form gap" data-controller="upload-preview">
