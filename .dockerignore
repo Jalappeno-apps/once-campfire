@@ -50,3 +50,6 @@
 
 # Ignore test files
 /test/
+
+# Ignore mobile app sources from server image build context.
+/mobile/

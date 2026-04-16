@@ -6,7 +6,11 @@ on:
       - main
     tags:
       - 'v*'
+    paths-ignore:
+      - 'mobile/**'
   pull_request:
+    paths-ignore:
+      - 'mobile/**'
   workflow_dispatch:
 
 concurrency:
