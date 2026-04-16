@@ -2,3 +2,7 @@ node_modules
 .expo
 dist
 *.log
+
+# Expo prebuild / EAS-generated native projects (managed workflow)
+ios
+android
