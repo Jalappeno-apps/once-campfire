@@ -12,6 +12,7 @@ TARGET_IMAGE="${TARGET_IMAGE:-}"
 EDITOR_CMD="${EDITOR:-vi}"
 AUTO_DEPLOY="${AUTO_DEPLOY:-false}"
 RUN_CANARY="${RUN_CANARY:-true}"
+DEPLOY_MODE="${DEPLOY_MODE:-canary}" # canary | direct
 
 IMAGE_SOURCE="remote"
 
@@ -89,6 +90,10 @@ confirm() {
   esac
 }
 
+is_interactive() {
+  [ -t 0 ] && [ -t 1 ]
+}
+
 seed_storage_from_backup() {
   local backup_storage_dir="$1"
   local target_storage_dir="$2"
@@ -147,6 +152,25 @@ remove_existing_named_container() {
     info "Removing existing container '${name}' to free reserved name"
     docker rm -f "$name" >/dev/null 2>&1 || true
   fi
+}
+
+cutover_to_primary() {
+  local app_dir="$1"
+  shift
+  local -a compose_flags=("$@")
+
+  info "Cutting over to primary ports 80/443"
+  once stop || true
+  remove_existing_named_container "$EXISTING_CONTAINER"
+
+  (
+    cd "$app_dir"
+    "${COMPOSE_CMD[@]}" \
+      -f docker-compose.prod.yml \
+      -f docker-compose.bind-storage.yml \
+      --env-file .env.production \
+      up "${compose_flags[@]}"
+  )
 }
 
 prepare_image() {
@@ -314,6 +338,11 @@ EOF
     compose_up_flags+=(--pull never)
   fi
 
+  if [ "$DEPLOY_MODE" = "direct" ]; then
+    RUN_CANARY="false"
+    AUTO_DEPLOY="true"
+  fi
+
   remove_stale_canary_container
   if [ "$RUN_CANARY" = "true" ] && { port_in_use "$CANARY_HTTP_PORT" || port_in_use "$CANARY_HTTPS_PORT"; }; then
     warn "Canary ports ${CANARY_HTTP_PORT}/${CANARY_HTTPS_PORT} are already in use. Skipping canary deploy."
@@ -364,20 +393,17 @@ EOF
 EOF
 
   if [ "$AUTO_DEPLOY" = "true" ]; then
-    if confirm "AUTO_DEPLOY=true set. Cut over now (stop once, start new stack on 80/443)?"; then
-      once stop || true
-      remove_existing_named_container "$EXISTING_CONTAINER"
-      (
-        cd "$APP_DIR"
-        "${COMPOSE_CMD[@]}" \
-          -f docker-compose.prod.yml \
-          -f docker-compose.bind-storage.yml \
-          --env-file .env.production \
-          up "${compose_up_flags[@]}"
-      )
-      info "Cutover complete."
+    if is_interactive; then
+      if confirm "AUTO_DEPLOY=true set. Cut over now (stop once, start new stack on 80/443)?"; then
+        cutover_to_primary "$APP_DIR" "${compose_up_flags[@]}"
+        info "Cutover complete."
+      else
+        info "Cutover skipped."
+      fi
     else
-      info "Cutover skipped."
+      info "AUTO_DEPLOY=true in non-interactive mode; proceeding with automatic cutover."
+      cutover_to_primary "$APP_DIR" "${compose_up_flags[@]}"
+      info "Cutover complete."
     fi
   fi
 }

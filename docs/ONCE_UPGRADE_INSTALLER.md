@@ -33,12 +33,24 @@ CANARY_HTTP_PORT=8080
 CANARY_HTTPS_PORT=8443
 RUN_CANARY=true
 AUTO_DEPLOY=false
+DEPLOY_MODE=canary # canary | direct
 ```
+
+- `DEPLOY_MODE=canary` starts canary on `8080/8443` first (default).
+- `DEPLOY_MODE=direct` skips canary and performs immediate cutover to `80/443`.
+- In non-interactive (`curl | bash`) runs, `AUTO_DEPLOY=true` now auto-cutovers without prompting.
 
 Example:
 
 ```bash
 TARGET_IMAGE=ghcr.io/jalappeno-apps/once-campfire:v0.1.0 \
+curl -fsSL https://raw.githubusercontent.com/Jalappeno-apps/once-campfire/main/script/install-or-upgrade-from-once | bash
+```
+
+Direct cutover one-liner (no canary):
+
+```bash
+DEPLOY_MODE=direct AUTO_DEPLOY=true \
 curl -fsSL https://raw.githubusercontent.com/Jalappeno-apps/once-campfire/main/script/install-or-upgrade-from-once | bash
 ```
 
