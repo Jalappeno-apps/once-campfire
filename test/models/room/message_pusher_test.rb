@@ -71,5 +71,4 @@ class Room::MessagePusherTest < ActiveSupport::TestCase
     assert_nil payload[:call_url]
     assert_equal "Designers", payload[:title]
   end
-
 end

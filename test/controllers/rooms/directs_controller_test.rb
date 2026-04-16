@@ -29,4 +29,22 @@ class Rooms::DirectsControllerTest < ActionDispatch::IntegrationTest
       assert_redirected_to root_url
     end
   end
+
+  test "destroy removes call invites tied to direct room" do
+    room = rooms(:david_and_kevin)
+    Calls::Invite.create!(
+      room: room,
+      creator: users(:david),
+      destination_url: "https://meet.daiwick.com/direct-room-call",
+      expires_at: 30.minutes.from_now
+    )
+
+    assert_difference -> { Room.count }, -1 do
+      assert_difference -> { Calls::Invite.count }, -1 do
+        delete rooms_direct_url(room)
+      end
+    end
+
+    assert_redirected_to root_url
+  end
 end

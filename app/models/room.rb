@@ -19,6 +19,7 @@ class Room < ApplicationRecord
 
   has_many :users, through: :memberships
   has_many :messages, dependent: :destroy
+  has_many :call_invites, class_name: "Calls::Invite", dependent: :delete_all, foreign_key: :room_id
 
   belongs_to :creator, class_name: "User", default: -> { Current.user }
 
