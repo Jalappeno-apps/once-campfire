@@ -5,7 +5,6 @@ This is a React Native starter wrapper for Campfire with:
 - domain onboarding
 - in-app WebView for full Campfire UI
 - push permission + Expo push token capture
-- optional polling endpoint to trigger local notifications
 
 ## 1) Install and run
 
@@ -25,29 +24,19 @@ On first launch, enter your hosted domain, for example:
 
 The app stores this as `https://chat.example.com`.
 
-## 3) Notification behavior (current starter)
+## 3) Notification behavior
 
-- App requests push permissions and tries to generate an Expo push token.
-- In Settings:
-  - configure a poll endpoint path (default: `/api/mobile/notifications`)
-  - optionally set API token for polling
-- App polls every 60 seconds while active and creates local notifications when
-  unread count increases.
-
-The endpoint can return:
-
-- `{"unread_count": 3}`
-- `{"notifications": [...]}` (array)
-- `[ ... ]` (array)
-- `3` (number)
+- App requests push permissions after sign-in and generates a device push token.
+- App registers this token with backend via `/api/mobile/devices`.
+- Backend sends notifications through configured mobile push gateway.
 
 ## 4) For real background push
 
 You still need backend support to deliver APNs/FCM/native pushes. Next step:
 
-1. Add endpoint to register device token.
+1. Ensure device token registration succeeds on sign-in.
 2. Trigger push when Campfire receives new events.
-3. Replace/augment polling with server-delivered push notifications.
+3. Monitor provider ticket errors in server logs.
 
 ## 5) Important Expo config
 

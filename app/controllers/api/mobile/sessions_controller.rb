@@ -8,6 +8,11 @@ module Api
         }
       end
 
+      def destroy
+        terminate_current_session
+        head :ok
+      end
+
       private
         def request_authentication
           head :unauthorized

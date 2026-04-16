@@ -87,9 +87,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :mobile do
-      resource :branding, only: :show
-      resource :session, only: :show
-      resources :notifications, only: :index
+      resource :session, only: %i[ show destroy ]
       resources :devices, only: %i[ index create ]
     end
   end
