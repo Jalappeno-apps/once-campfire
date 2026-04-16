@@ -5,7 +5,7 @@ import { escapeHTML } from "helpers/dom_helpers"
 
 export default class extends Controller {
   static classes = ["toolbar"]
-  static targets = [ "clientid", "fields", "fileList", "text" ]
+  static targets = [ "clientid", "fields", "fileList", "meetScheduler", "meetScheduleAt", "text" ]
   static values = { roomId: Number }
   static outlets = [ "messages" ]
 
@@ -15,6 +15,8 @@ export default class extends Controller {
     if (!this.#usingTouchDevice) {
       onNextEventLoopTick(() => this.textTarget.focus())
     }
+
+    this.#setDefaultMeetScheduleTime()
   }
 
   submit(event) {
@@ -67,6 +69,29 @@ export default class extends Controller {
     event.preventDefault()
     this.replaceMessageContent("/meet")
     this.submit(event)
+  }
+
+  toggleMeetScheduler() {
+    if (!this.hasMeetSchedulerTarget) return
+
+    this.meetSchedulerTarget.hidden = !this.#showMeetScheduler()
+  }
+
+  insertMeetSchedule(event) {
+    event.preventDefault()
+    if (!this.hasMeetScheduleAtTarget) return
+
+    const rawValue = this.meetScheduleAtTarget.value
+    if (!rawValue) return
+
+    this.#replaceComposerText(`/meet at ${this.#formatLocalDateTime(rawValue)} `)
+    this.meetSchedulerTarget.hidden = true
+  }
+
+  hideMeetScheduler(event) {
+    event.preventDefault()
+    if (!this.hasMeetSchedulerTarget) return
+    this.meetSchedulerTarget.hidden = true
   }
 
   filePicked(event) {
@@ -161,6 +186,44 @@ export default class extends Controller {
 
   #generateClientId() {
     return Math.random().toString(36).slice(2)
+  }
+
+  #showMeetScheduler() {
+    const text = this.textTarget?.editor?.getDocument()?.toString() || ""
+    return /^\/meet at\s*$/i.test(text.replace(/\u00a0/g, " ").replace(/\s+$/, ""))
+  }
+
+  #setDefaultMeetScheduleTime() {
+    if (!this.hasMeetScheduleAtTarget || this.meetScheduleAtTarget.value) return
+
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 30)
+    now.setSeconds(0, 0)
+
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    this.meetScheduleAtTarget.value = localDateTime
+  }
+
+  #formatLocalDateTime(value) {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, "0")
+    const day = `${date.getDate()}`.padStart(2, "0")
+    const hours = `${date.getHours()}`.padStart(2, "0")
+    const minutes = `${date.getMinutes()}`.padStart(2, "0")
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  }
+
+  #replaceComposerText(content) {
+    const editor = this.textTarget.editor
+    editor.recordUndoEntry("Insert meet schedule")
+    editor.setSelectedRange([0, editor.getDocument().toString().length])
+    editor.deleteInDirection("forward")
+    editor.insertString(content)
+    editor.setSelectedRange([editor.getDocument().toString().length])
   }
 
   #reset() {

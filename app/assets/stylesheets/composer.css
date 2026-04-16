@@ -105,6 +105,68 @@
   }
 }
 
+.composer__meet-scheduler {
+  margin-block-start: var(--block-space-half);
+  margin-block-end: var(--block-space-quarter);
+}
+
+.composer__meet-scheduler-card {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.35rem;
+  inline-size: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background-color: color-mix(in oklab, var(--color-message-bg), var(--color-bg) 25%);
+  overflow: hidden;
+}
+
+.composer__meet-scheduler-label {
+  color: var(--color-text);
+  font-size: 0.72rem;
+  letter-spacing: 0.015em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.composer__meet-scheduler-input[type="datetime-local"] {
+  margin: 0 !important;
+  flex: 1 1 auto;
+  inline-size: auto;
+  min-inline-size: 0;
+  padding: 0.32rem 0.45rem !important;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-background);
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.composer__meet-scheduler-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.composer__meet-scheduler-apply,
+.composer__meet-scheduler-cancel {
+  margin: 0;
+  padding: 0.28rem 0.52rem;
+  min-block-size: unset;
+  border-radius: 0.5rem;
+  font-size: 0.71rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.composer__meet-scheduler-cancel {
+  opacity: 0.8;
+}
+
 @media (min-width: 100ch) and (any-hover: hover) and (pointer: fine) {
   .composer__rich-text-btn {
     display: inline-flex;

@@ -41,18 +41,23 @@ async function configureCallNotificationActions(): Promise<void> {
     {
       identifier: CALL_ACTION_DECLINE,
       buttonTitle: "Decline",
-      options: { isDestructive: true, opensAppToForeground: false }
+      options: { isDestructive: true, opensAppToForeground: true }
     }
   ]);
 }
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false
-  })
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data as { type?: unknown } | null | undefined;
+    const type = typeof data?.type === "string" ? data.type : null;
+
+    return {
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: type === "incoming_call",
+      shouldSetBadge: false
+    };
+  }
 });
 
 function normalizeDomain(rawDomain: string): string | null {
@@ -289,11 +294,13 @@ function AppContent() {
     if (!callPayload) return false;
 
     if (response.actionIdentifier === CALL_ACTION_DECLINE) {
+      void Notifications.dismissNotificationAsync(response.notification.request.identifier);
       setIncomingCall(null);
       return true;
     }
 
     if (response.actionIdentifier === CALL_ACTION_ACCEPT) {
+      void Notifications.dismissNotificationAsync(response.notification.request.identifier);
       setIncomingCall(callPayload);
       const didOpen = tryOpenCallUrl(callPayload.callUrl);
       if (!didOpen && callPayload.path) setPendingNotificationPath(callPayload.path);
@@ -394,7 +401,9 @@ function AppContent() {
         body?: string | null;
         data?: Record<string, unknown> | null;
       });
-      if (callPayload) setIncomingCall(callPayload);
+      if (callPayload) {
+        setIncomingCall(callPayload);
+      }
     });
 
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {

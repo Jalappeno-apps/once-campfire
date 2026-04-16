@@ -24,7 +24,7 @@
                         aria: { multiline: "true", label: "Write a message" },
                         data: {
                           controller: "rich-autocomplete",
-                          action: rich_text_data_actions,
+                          action: "#{rich_text_data_actions} trix-change->composer#toggleMeetScheduler",
                           rich_autocomplete_url_value: autocompletable_users_path(room_id: room.id),
                           permitted_attachment_types: "application/vnd.actiontext.opengraph-embed",
                           composer_target: "text" } %>
@@ -53,6 +53,25 @@
                 <% end %>
               </div>
             </div>
+
+            <div class="composer__meet-scheduler mt-1"
+                 data-composer-target="meetScheduler"
+                 hidden>
+              <div class="composer__meet-scheduler-card">
+                <span class="composer__meet-scheduler-label txt-small txt-bold">At</span>
+
+                <input id="meet-schedule-at"
+                       class="input min-width composer__meet-scheduler-input"
+                       type="datetime-local"
+                       data-composer-target="meetScheduleAt" />
+
+                <div class="composer__meet-scheduler-actions">
+                  <button class="btn btn--reversed txt-small composer__meet-scheduler-apply" type="button" data-action="composer#insertMeetSchedule">Set</button>
+                  <button class="btn btn--plain txt-small composer__meet-scheduler-cancel" type="button" data-action="composer#hideMeetScheduler">Cancel</button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </fieldset>
 

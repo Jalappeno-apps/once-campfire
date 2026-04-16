@@ -49,6 +49,7 @@ class Room::MessagePusher
     def with_call_metadata(payload)
       call_link = Calls::InviteLinkExtractor.call(message.plain_text_body)
       return payload unless call_link
+      return payload if scheduled_call_message?
       call_url = Calls::InviteUrlResolver.call(call_link)
       return payload unless call_url
 
@@ -60,6 +61,10 @@ class Room::MessagePusher
         caller_name: message.creator.name,
         room_name: room.name
       )
+    end
+
+    def scheduled_call_message?
+      message.plain_text_body.start_with?("Scheduled call (")
     end
 
     def push_to_users_involved_in_everything(payload)

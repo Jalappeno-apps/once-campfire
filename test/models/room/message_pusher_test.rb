@@ -56,4 +56,20 @@ class Room::MessagePusherTest < ActiveSupport::TestCase
     assert_equal invite.destination_url, payload[:call_url]
     assert_equal "David started a call", payload[:body]
   end
+
+  test "scheduled meet links do not produce incoming call payload" do
+    trusted_host = URI.parse(Calls::Configuration.meet_base_url).host
+    message = rooms(:designers).messages.create!(
+      body: "Scheduled call (2026-04-16 21:56): https://#{trusted_host}/campfire-call-room",
+      client_message_id: "message-pusher-scheduled-call",
+      creator: users(:david)
+    )
+
+    payload = Room::MessagePusher.new(room: rooms(:designers), message: message).send(:build_payload)
+
+    assert_nil payload[:type]
+    assert_nil payload[:call_url]
+    assert_equal "Designers", payload[:title]
+  end
+
 end

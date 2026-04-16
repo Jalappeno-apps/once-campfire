@@ -113,7 +113,7 @@ module MessagesHelper
       call_link = trusted_call_link_from(content)
       return linked_content unless call_link
 
-      safe_join([ linked_content, call_invite_card(call_link) ])
+      safe_join([ linked_content, call_invite_card(message, call_link, scheduled_at: scheduled_call_time_from(content)) ])
     end
 
     def trusted_call_link_from(content)
@@ -124,13 +124,73 @@ module MessagesHelper
       Calls::Configuration.trusted_hosts
     end
 
-    def call_invite_card(call_link)
+    def call_invite_card(message, call_link, scheduled_at: nil)
       tag.div class: "message__call-invite" do
-        safe_join([
+        items = [
           tag.div("Video call", class: "message__call-invite-title"),
           tag.div(call_link, class: "message__call-invite-link"),
-          link_to("Join call", call_link, class: "btn btn--reversed message__call-invite-btn")
-        ])
+          tag.div(class: "message__call-invite-actions") do
+            action_buttons = [ link_to("Join call", call_link, class: "btn btn--reversed message__call-invite-btn") ]
+            if scheduled_at
+              action_buttons << link_to(
+                "Add to calendar",
+                google_calendar_url(call_link, scheduled_at, calendar_invite_emails_for(message)),
+                class: "btn btn--plain message__call-invite-calendar",
+                target: "_blank",
+                rel: "noopener"
+              )
+            end
+            safe_join(action_buttons)
+          end
+        ]
+
+        safe_join(items)
       end
+    end
+
+    def scheduled_call_time_from(content)
+      text = ActionText::Content.new(content.to_s).to_plain_text.unicode_normalize
+      match = text.match(/Scheduled call \((?<scheduled_at>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\):/i)
+      return nil unless match
+
+      Time.zone.strptime(match[:scheduled_at], "%Y-%m-%d %H:%M")
+    rescue ArgumentError
+      nil
+    end
+
+    def google_calendar_url(call_link, scheduled_at, attendees)
+      ends_at = scheduled_at + 1.hour
+      absolute_call_link = absolute_call_link_for(call_link)
+      params = {
+        action: "TEMPLATE",
+        text: "Campfire call",
+        details: "Join call: #{absolute_call_link}",
+        location: absolute_call_link,
+        # Keep the user-selected local wall time (no UTC coercion) so Google
+        # Calendar opens with the exact hour typed in `/meet at`.
+        dates: "#{scheduled_at.strftime("%Y%m%dT%H%M%S")}/#{ends_at.strftime("%Y%m%dT%H%M%S")}"
+      }
+      params[:add] = attendees.join(",") if attendees.any?
+
+      "https://calendar.google.com/calendar/render?#{params.to_query}"
+    end
+
+    def calendar_invite_emails_for(message)
+      mentionee_emails = message.mentionees.map(&:email_address).compact_blank
+      body_emails = extract_emails_from(message.plain_text_body)
+      (mentionee_emails + body_emails).map(&:downcase).uniq
+    end
+
+    def extract_emails_from(text)
+      text.to_s.scan(/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i)
+    end
+
+    def absolute_call_link_for(call_link)
+      uri = URI.parse(call_link.to_s)
+      return uri.to_s if uri.host.present?
+
+      URI.join(request.base_url, call_link.to_s).to_s
+    rescue URI::InvalidURIError
+      call_link.to_s
     end
 end

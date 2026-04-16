@@ -86,8 +86,15 @@ class MessagesController < ApplicationController
     def meet_invite_message(raw_body)
       destination_url = Calls::MeetLinkBuilder.call(room: @room, creator: Current.user)
       short_link = create_call_invite_link(destination_url)
-      invite_prefix = "Join call: #{short_link}"
-      raw_body.to_s.sub(%r{/meet}i, invite_prefix).gsub(/[[:space:]\u00A0]+\z/, "")
+      if (scheduled_at = scheduled_meet_at(raw_body))
+        invite_prefix = "Scheduled call (#{scheduled_at}): #{short_link}"
+        raw_body.to_s
+          .sub(%r{/meet\s+at\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}}i, invite_prefix)
+          .gsub(/[[:space:]\u00A0]+\z/, "")
+      else
+        invite_prefix = "Join call: #{short_link}"
+        raw_body.to_s.sub(%r{/meet}i, invite_prefix).gsub(/[[:space:]\u00A0]+\z/, "")
+      end
     end
 
     def create_call_invite_link(destination_url)
@@ -98,6 +105,12 @@ class MessagesController < ApplicationController
         expires_at: Time.current + Calls::Configuration.call_invite_ttl_seconds
       )
       short_call_invite_url(token: invite.token)
+    end
+
+    def scheduled_meet_at(raw_body)
+      text = ActionText::Content.new(raw_body.to_s).to_plain_text
+      normalized = text.unicode_normalize.gsub(/\p{Space}+/, " ").strip
+      normalized.match(%r{\A/meet\s+at\s+(?<scheduled_at>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})(?:\s+.*)?\z}i)&.[](:scheduled_at)
     end
 
 

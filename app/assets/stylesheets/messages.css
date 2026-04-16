@@ -620,3 +620,15 @@ img.message__attachment {
 .message__call-invite-btn {
   inline-size: fit-content;
 }
+
+.message__call-invite-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.message__call-invite-calendar {
+  inline-size: fit-content;
+  --btn-padding: 0.5em 1.1em;
+}

@@ -102,6 +102,29 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_includes message.mentionees.ids, users(:jason).id
   end
 
+  test "creating a scheduled /meet message keeps mention and external email participants" do
+    post room_messages_url(@room, format: :turbo_stream), params: { message: {
+      body: "<div>/meet at 2026-04-16 21:56 #{mention_attachment_for(:jason)} malhotraritwick2011@gmail.com</div>",
+      client_message_id: 999
+    } }
+
+    message = Message.last
+    assert_match(
+      /\AScheduled call \(2026-04-16 21:56\): http:\/\/once\.campfire\.test\/c\/[a-z0-9]+ @Jason malhotraritwick2011@gmail.com\z/,
+      message.plain_text_body
+    )
+    assert_includes message.mentionees.ids, users(:jason).id
+
+    assert_rendered_turbo_stream_broadcast @room, :messages, action: "append", target: [ @room, :messages ] do
+      assert_select ".message__call-invite-calendar", text: "Add to calendar"
+      assert_select ".message__call-invite-calendar[href*='calendar.google.com']"
+      assert_select ".message__call-invite-calendar[href*='location=']"
+      assert_select ".message__call-invite-calendar[href*='%2Fc%2F']"
+      assert_select ".message__call-invite-calendar[href*='dates=20260416T215600%2F20260416T225600']"
+      assert_select ".message__call-invite-calendar[href*='add=jason%4037signals.com%2Cmalhotraritwick2011%40gmail.com']"
+    end
+  end
+
   test "update updates a message belonging to the user" do
     message = @room.messages.where(creator: users(:david)).first
 
