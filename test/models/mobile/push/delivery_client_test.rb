@@ -39,6 +39,32 @@ class Mobile::Push::DeliveryClientTest < ActiveSupport::TestCase
     )
   end
 
+  test "falls back to expo default endpoint when env is blank" do
+    ENV["MOBILE_PUSH_DELIVERY_URL"] = ""
+
+    device = Mobile::Device.create!(
+      user: users(:jason),
+      expo_push_token: "ExponentPushToken[test-device-blank-endpoint]",
+      platform: "android",
+      device_name: "Pixel"
+    )
+
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+    response.stubs(:body).returns({ data: [] }.to_json)
+
+    http = mock("net-http")
+    http.expects(:request).with do |request|
+      request.is_a?(Net::HTTP::Post) && request.path == "/--/api/v2/push/send"
+    end.returns(response)
+
+    Net::HTTP.expects(:start).with("exp.host", 443, use_ssl: true).yields(http)
+
+    Mobile::Push::DeliveryClient.deliver(
+      payload: { title: "Campfire", body: "Message", path: "/rooms/1" },
+      devices: Mobile::Device.where(id: device.id)
+    )
+  end
+
   private
     def reset_endpoint_cache
       singleton_class = Mobile::Push::DeliveryClient.singleton_class

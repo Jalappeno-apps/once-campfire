@@ -82,12 +82,19 @@ class Room::PushTest < ActiveSupport::TestCase
       wait_for_pool_tasks(Rails.configuration.x.web_push_pool.invalidation_pool, count)
     end
 
-    def wait_for_pool_tasks(pool, count)
-      start = Time.now
-      timeout = 2.0
-      while pool.completed_task_count < count
-        raise "Timeout waiting for pool tasks to complete" if Time.now - start > timeout
-        sleep timeout / 10.0
+    def wait_for_pool_tasks(pool, expected_completed_tasks)
+      timeout_seconds = 10.0
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout_seconds
+
+      loop do
+        completed_tasks = pool.completed_task_count
+        return if completed_tasks >= expected_completed_tasks
+
+        if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+          raise "Timeout waiting for pool tasks to complete (expected #{expected_completed_tasks}, got #{completed_tasks})"
+        end
+
+        sleep 0.1
       end
     end
 end

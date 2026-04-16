@@ -40,7 +40,8 @@ module Mobile
         private
           def endpoint
             @endpoint ||= begin
-              raw_endpoint = ENV.fetch("MOBILE_PUSH_DELIVERY_URL", "https://exp.host/--/api/v2/push/send").to_s.strip
+              raw_endpoint = ENV.fetch("MOBILE_PUSH_DELIVERY_URL", "").to_s.strip
+              raw_endpoint = "https://exp.host/--/api/v2/push/send" if raw_endpoint.blank?
               normalized = raw_endpoint.match?(/\Ahttps?:\/\//i) ? raw_endpoint : "https://#{raw_endpoint}"
               uri = URI.parse(normalized)
 

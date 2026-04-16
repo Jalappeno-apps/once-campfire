@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,6 +62,27 @@ function isSettingsLikePath(url: string): boolean {
     );
   } catch {
     return false;
+  }
+}
+
+function extractNotificationPath(response: Notifications.NotificationResponse | null): string | null {
+  if (!response) return null;
+  const data = response.notification.request.content.data as { path?: unknown } | null | undefined;
+  return typeof data?.path === "string" ? data.path : null;
+}
+
+function resolveNotificationUrl(domain: string, rawPath: string): string | null {
+  const trimmed = rawPath.trim();
+  if (!trimmed) return null;
+
+  try {
+    const base = new URL(domain);
+    const resolved = new URL(trimmed, base);
+    // Only allow in-app navigation to current Campfire domain.
+    if (resolved.origin !== base.origin) return null;
+    return resolved.toString();
+  } catch {
+    return null;
   }
 }
 
@@ -131,24 +152,42 @@ function AppContent() {
   const [permissionStatus, setPermissionStatus] = useState<Notifications.PermissionStatus | "unknown">("unknown");
   const [pushRegistrationStatus, setPushRegistrationStatus] = useState("Waiting for sign-in");
   const [currentWebUrl, setCurrentWebUrl] = useState("");
+  const [pendingNotificationPath, setPendingNotificationPath] = useState<string | null>(null);
+  const [webViewSourceUrl, setWebViewSourceUrl] = useState<string | null>(null);
+  const webViewRef = useRef<WebView>(null);
   const shouldShowServerButton = useMemo(() => {
     return !showSettings && isSettingsLikePath(currentWebUrl);
   }, [showSettings, currentWebUrl]);
+
+  const navigateWebViewToUrl = useCallback((targetUrl: string) => {
+    setShowSettings(false);
+    setWebViewSourceUrl(targetUrl);
+    setCurrentWebUrl(targetUrl);
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(`window.location.assign(${JSON.stringify(targetUrl)}); true;`);
+    }
+  }, []);
 
   const refreshAuthSession = useCallback(async () => {
     if (!domain) return;
 
     try {
-      const response = await fetch(`${domain}/api/mobile/session`, {
+      const response = await fetch(`${domain}/api/mobile/session?t=${Date.now()}`, {
         method: "GET",
         credentials: "include",
-        headers: { Accept: "application/json" }
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache"
+        }
       });
 
-      if (!response.ok) {
+      if (response.status === 401) {
         setAuthUserId(null);
         return;
       }
+
+      if (!response.ok) return;
 
       const payload = (await response.json()) as { user_id?: number };
       setAuthUserId(typeof payload.user_id === "number" ? payload.user_id : null);
@@ -189,6 +228,38 @@ function AppContent() {
     if (!domain) return;
     void refreshAuthSession();
   }, [domain, refreshAuthSession]);
+
+  useEffect(() => {
+    if (!domain) return;
+    setWebViewSourceUrl(domain);
+  }, [domain]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const initialResponse = await Notifications.getLastNotificationResponseAsync();
+      if (!mounted) return;
+      const initialPath = extractNotificationPath(initialResponse);
+      if (initialPath) setPendingNotificationPath(initialPath);
+    })();
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const path = extractNotificationPath(response);
+      if (path) setPendingNotificationPath(path);
+    });
+
+    return () => {
+      mounted = false;
+      responseSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!domain || !pendingNotificationPath) return;
+    const targetUrl = resolveNotificationUrl(domain, pendingNotificationPath);
+    if (targetUrl) navigateWebViewToUrl(targetUrl);
+    setPendingNotificationPath(null);
+  }, [domain, pendingNotificationPath, navigateWebViewToUrl]);
 
   const ensurePushRegistration = useCallback(async () => {
     if (!authUserId) {
@@ -305,6 +376,7 @@ function AppContent() {
 
     await AsyncStorage.setItem(STORAGE_KEYS.domain, normalized);
     setDomain(normalized);
+    setWebViewSourceUrl(normalized);
     setShowSettings(false);
   }
 
@@ -428,7 +500,8 @@ function AppContent() {
 
       <View style={[styles.webviewWrap, { backgroundColor: colors.background }]}>
         <WebView
-          source={{ uri: domain }}
+          ref={webViewRef}
+          source={{ uri: webViewSourceUrl ?? domain }}
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
           userAgent="CampfireMobileApp/1.0"
