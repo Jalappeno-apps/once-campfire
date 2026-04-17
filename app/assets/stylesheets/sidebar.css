@@ -494,8 +494,10 @@ body.sidebar #sidebar {
 
 #sidebar .sidebar-row__label {
   color: var(--sidebar-fg-muted);
+  flex: 1 1 auto;
   font-size: 0.92rem;
   font-weight: 500;
+  min-inline-size: 0;
 }
 
 #sidebar .sidebar-row--active .sidebar-row__prefix,
@@ -557,28 +559,40 @@ body.sidebar #sidebar {
   &.unread {
     color: var(--sidebar-fg);
     font-weight: 700;
+    padding-inline-end: 1.4rem;
   }
 }
 
-/* Red unread dot beside room name (channels + directs) */
-#sidebar .room.unread .sidebar-row__label {
-  display: inline-flex;
+/* Unread dot: scope to `.sidebar-row.room.btn` so it still applies when `#sidebar` is not an ancestor
+   (turbo-frame + `display: contents`). */
+.sidebar-row.room.btn .sidebar-row__unread-dot {
+  display: none;
+}
+
+.sidebar-row.room.btn.unread .sidebar-row__unread-dot {
   align-items: center;
-  gap: 0.4rem;
+  display: flex;
+  filter: drop-shadow(0 0 0.5px rgb(0 0 0 / 0.35));
+  forced-color-adjust: none;
+  inset-block-start: 50%;
+  inset-inline-end: 0.5rem;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
-#sidebar .room.unread .sidebar-row__label::before {
-  content: "";
-  inline-size: 0.42rem;
-  block-size: 0.42rem;
-  border-radius: 999px;
-  background: #ff4d4f;
-  flex: 0 0 auto;
+.sidebar-row.room.btn.unread .sidebar-row__unread-dot svg {
+  display: block;
 }
 
-/* Keep contrast in active pill */
-#sidebar .room.sidebar-row--active.unread .sidebar-row__label::before {
-  background: color-mix(in oklab, #ff4d4f, white 18%);
+.sidebar-row.room.btn.unread .sidebar-row__unread-dot circle {
+  fill: #ff4d4f;
+}
+
+.sidebar-row.room.btn.sidebar-row--active.unread .sidebar-row__unread-dot circle {
+  fill: color-mix(in oklab, #ff4d4f, white 18%);
 }
 
 /* `.btn` uses `--btn-background`; do not set `background-color` on `.room` or it overrides the active pill */

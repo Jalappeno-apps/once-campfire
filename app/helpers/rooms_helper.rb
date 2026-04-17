@@ -1,7 +1,11 @@
 module RoomsHelper
   def link_to_room(room, **attributes, &)
     link_to room_path(room), **attributes, data: {
-      rooms_list_target: "room", room_id: room.id, badge_dot_target: "unread", sorted_list_target: "item"
+      rooms_list_target: "room",
+      room_id: room.id,
+      badge_dot_target: "unread",
+      sorted_list_target: "item",
+      action: "click->rooms-list#read"
     }.merge(attributes.delete(:data) || {}), &
   end
 

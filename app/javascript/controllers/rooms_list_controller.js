@@ -27,7 +27,8 @@ export default class extends Controller {
     this.read({ detail: { roomId: Current.room.id } })
   }
 
-  read({ detail: { roomId } }) {
+  read(event) {
+    const roomId = event?.detail?.roomId ?? event?.currentTarget?.dataset?.roomId
     const room = this.#findRoomTarget(roomId)
 
     if (room) {
