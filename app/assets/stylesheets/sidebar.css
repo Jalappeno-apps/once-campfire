@@ -560,6 +560,27 @@ body.sidebar #sidebar {
   }
 }
 
+/* Red unread dot beside room name (channels + directs) */
+#sidebar .room.unread .sidebar-row__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#sidebar .room.unread .sidebar-row__label::before {
+  content: "";
+  inline-size: 0.42rem;
+  block-size: 0.42rem;
+  border-radius: 999px;
+  background: #ff4d4f;
+  flex: 0 0 auto;
+}
+
+/* Keep contrast in active pill */
+#sidebar .room.sidebar-row--active.unread .sidebar-row__label::before {
+  background: color-mix(in oklab, #ff4d4f, white 18%);
+}
+
 /* `.btn` uses `--btn-background`; do not set `background-color` on `.room` or it overrides the active pill */
 #sidebar .room.sidebar-row--active {
   --btn-background: var(--sidebar-row-active-bg);
