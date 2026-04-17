@@ -71,4 +71,17 @@ class Room::MessagePusherTest < ActiveSupport::TestCase
     assert_nil payload[:call_url]
     assert_equal "Designers", payload[:title]
   end
+
+  test "build_payload links notifications to the specific message" do
+    message = rooms(:designers).messages.create!(
+      body: "Deep link me",
+      client_message_id: "message-pusher-message-path",
+      creator: users(:david)
+    )
+
+    payload = Room::MessagePusher.new(room: rooms(:designers), message: message).send(:build_payload)
+    expected_path = Rails.application.routes.url_helpers.room_at_message_path(rooms(:designers), message)
+
+    assert_equal expected_path, payload[:path]
+  end
 end

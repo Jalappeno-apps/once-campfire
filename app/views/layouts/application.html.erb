@@ -31,7 +31,7 @@
   </head>
 
   <body class="<%= body_classes %>"
-        data-controller="local-time lightbox call-embed"
+        data-controller="local-time lightbox call-embed keyboard-overlay"
         data-call-embed-host-allowlist-value="<%= Calls::Configuration.trusted_hosts.to_json %>"
         data-action="click@document->call-embed#handleLink">
     <a href="#main-content" class="skip-navigation btn">Skip to main content</a>

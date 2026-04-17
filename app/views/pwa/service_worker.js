@@ -19,12 +19,25 @@ self.addEventListener("notificationclick", (event) => {
 })
 
 async function openURL(url) {
-  const clients = await self.clients.matchAll({ type: "window" })
-  const focused = clients.find((client) => client.focused)
+  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true })
+  const normalizedTarget = new URL(url, self.location.origin).href
+  const matchingClient = windows.find((client) => {
+    try {
+      return new URL(client.url, self.location.origin).href === normalizedTarget
+    } catch {
+      return false
+    }
+  })
+  const focusedClient = windows.find((client) => client.focused)
+  const targetClient = matchingClient || focusedClient
 
-  if (focused) {
-    await focused.navigate(url)
-  } else {
-    await self.clients.openWindow(url)
+  if (targetClient) {
+    if (!matchingClient) {
+      await targetClient.navigate(normalizedTarget)
+    }
+    await targetClient.focus()
+    return
   }
+
+  await self.clients.openWindow(normalizedTarget)
 }

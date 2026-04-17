@@ -2,10 +2,10 @@
 .composer {
   flex: none;
   padding: var(--block-space-half) calc(var(--inline-space) + 1vw);
+  /* padding-block-end: calc(var(--block-space-half) + env(safe-area-inset-bottom, 0px)) + + var(--campfire-keyboard-overlay, 0px); */
   padding-block-end: calc(
     var(--block-space-half) + env(safe-area-inset-bottom, 0px) + var(--campfire-keyboard-overlay, 0px)
   );
-
   @media (max-width: 100ch) {
     /* Keep input above home indicator when keyboard overlays (viewport `overlays-content`) */
     background-color: var(--color-bg);

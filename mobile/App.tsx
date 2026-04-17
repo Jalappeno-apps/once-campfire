@@ -209,6 +209,11 @@ function isAllowedExternalUrl(rawUrl: string): boolean {
   }
 }
 
+function areStringArraysEqual(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
+
 async function ensureCallPermissions(): Promise<boolean> {
   if (Platform.OS !== "android") return true;
 
@@ -422,7 +427,9 @@ function AppContent() {
       setAuthUserId(typeof payload.user_id === "number" ? payload.user_id : null);
       if (Array.isArray(payload.trusted_call_hosts)) {
         const safeHosts = payload.trusted_call_hosts.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
-        if (safeHosts.length > 0) setTrustedCallHosts(safeHosts);
+        if (safeHosts.length > 0) {
+          setTrustedCallHosts((previous) => (areStringArraysEqual(previous, safeHosts) ? previous : safeHosts));
+        }
       }
     } catch {
       // Ignore transient network failures and keep current auth state.
