@@ -6,7 +6,7 @@ module User::Mentionable
   end
 
   def to_trix_content_attachment_partial_path
-    "users/mention"
+    "users/mention_editor"
   end
 
   def attachable_plain_text_representation(caption)
