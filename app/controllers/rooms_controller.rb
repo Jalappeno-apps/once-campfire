@@ -119,9 +119,7 @@ class RoomsController < ApplicationController
       when "documents"
         scope.where(*documents_condition)
       when "other"
-        media_sql, *media_binds = media_condition
-        documents_sql, *document_binds = documents_condition
-        scope.where.not("(#{media_sql}) OR (#{documents_sql})", *media_binds, *document_binds)
+        scope.where.not(*media_condition).where.not(*documents_condition)
       else
         scope
       end

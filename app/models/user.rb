@@ -107,6 +107,11 @@ class User < ApplicationRecord
     end
 
     def close_remote_connections(reconnect: false)
-      ActionCable.server.remote_connections.where(current_user: self).disconnect reconnect: reconnect
+      sessions.find_each do |session|
+        ActionCable.server.remote_connections.where(current_session: session).disconnect reconnect: reconnect
+      rescue ActionCable::RemoteConnections::RemoteConnection::InvalidIdentifiersError
+        # Some test stubs and adapter combinations don't expose connection identifiers.
+        nil
+      end
     end
 end

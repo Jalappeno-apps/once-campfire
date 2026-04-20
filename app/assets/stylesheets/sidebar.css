@@ -541,6 +541,7 @@ body.sidebar #sidebar {
   max-inline-size: none;
   min-block-size: 1.9rem;
   position: relative;
+  text-align: start;
   text-decoration: none;
 
   .searches-list & {
