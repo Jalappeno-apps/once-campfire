@@ -91,12 +91,13 @@ class UsersController < ApplicationController
       rooms_in_account = Current.user.rooms_in_account(Current.account).includes(:users)
       shared_rooms = rooms_in_account.select { |room| room.user_ids.include?(user.id) }
       shared_direct_rooms = shared_rooms.select(&:direct?)
+      joined_membership = user.account_memberships.find_by(account_id: Current.account.id)
 
       {
         shared_rooms_count: shared_rooms.size,
         shared_channels_count: shared_rooms.count { |room| !room.direct? },
-        first_direct_started_at: shared_direct_rooms.map(&:created_at).compact.min,
-        last_direct_activity_at: shared_direct_rooms.map(&:updated_at).compact.max
+        last_direct_activity_at: shared_direct_rooms.map(&:updated_at).compact.max,
+        joined_on: joined_membership&.created_at || user.created_at
       }
     end
 

@@ -67,7 +67,7 @@
           </section>
         <% end %>
 
-        <section class="txt-align-start" style="display: grid; gap: 0.45rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));">
+        <section class="txt-align-start" style="display: grid; gap: 0.45rem; grid-template-columns: repeat(2, minmax(0, 1fr));">
           <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
             <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Shared rooms</div>
             <div style="font-size: 1.35rem; font-weight: 700; line-height: 1.2;"><%= @profile_stats[:shared_rooms_count] || 0 %></div>
@@ -76,17 +76,7 @@
             <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Shared channels</div>
             <div style="font-size: 1.35rem; font-weight: 700; line-height: 1.2;"><%= @profile_stats[:shared_channels_count] || 0 %></div>
           </article>
-          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
-            <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">First direct</div>
-            <div style="font-size: 1rem; font-weight: 650; line-height: 1.25;">
-              <% if @profile_stats[:first_direct_started_at] %>
-                <%= local_datetime_tag(@profile_stats[:first_direct_started_at], style: :date) %>
-              <% else %>
-                Not started
-              <% end %>
-            </div>
-          </article>
-          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
+          <article style="grid-column: 1 / -1; background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
             <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Last direct activity</div>
             <div style="font-size: 1rem; font-weight: 650; line-height: 1.25;">
               <% if @profile_stats[:last_direct_activity_at] %>
@@ -129,6 +119,10 @@
             <div class="profile-card__row" style="background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem;">
               <div class="profile-card__row-label">Timezone setting</div>
               <div class="profile-card__row-value"><%= Time.zone.tzinfo.name %> (workspace default; personal timezone not set)</div>
+            </div>
+            <div class="profile-card__row" style="background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem;">
+              <div class="profile-card__row-label">Joined on</div>
+              <div class="profile-card__row-value"><%= local_datetime_tag(@profile_stats[:joined_on] || @user.created_at, style: :date) %></div>
             </div>
           </div>
         </section>

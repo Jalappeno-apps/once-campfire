@@ -18,20 +18,20 @@
       <span class="for-screen-reader">Room actions</span>
     </summary>
 
-    <div class="room-nav-menu shadow" data-popup-target="menu" style="position: absolute; inset: calc(var(--btn-size) + 0.4rem) 0 auto auto; min-inline-size: 11.5rem; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 0.75rem; padding: 0.4rem; z-index: 12;">
+    <div class="room-nav-menu shadow" data-popup-target="menu">
       <div class="room-nav-menu__section-label" style="font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.45rem; text-transform: uppercase; opacity: 0.8;">Navigate</div>
-      <%= link_to room_path(room, tab: "messages"), class: class_names("room-nav-menu__item", "room-nav-menu__item--active": @active_room_tab == "messages"), style: "display: flex; align-items: center; column-gap: 0.5rem; padding: 0.48rem 0.52rem; border-radius: 0.45rem; text-decoration: none; color: var(--color-text); pointer-events: auto; #{@active_room_tab == "messages" ? "background: color-mix(in oklab, var(--color-border), var(--color-bg) 32%);" : ""}" do %>
-        <%= image_tag "messages.svg", size: 18, class: "colorize--black", aria: { hidden: "true" } %>
+      <%= link_to room_path(room, tab: "messages"), class: class_names("room-nav-menu__item", "room-nav-menu__item--active": @active_room_tab == "messages") do %>
+        <%= image_tag "messages.svg", size: 18, class: "room-nav-menu__icon", aria: { hidden: "true" } %>
         Messages
       <% end %>
-      <%= link_to room_path(room, tab: "files"), class: class_names("room-nav-menu__item", "room-nav-menu__item--active": @active_room_tab == "files"), style: "display: flex; align-items: center; column-gap: 0.5rem; padding: 0.48rem 0.52rem; border-radius: 0.45rem; text-decoration: none; color: var(--color-text); pointer-events: auto; #{@active_room_tab == "files" ? "background: color-mix(in oklab, var(--color-border), var(--color-bg) 32%);" : ""}" do %>
-        <%= image_tag "attachment.svg", size: 18, class: "colorize--black", aria: { hidden: "true" } %>
+      <%= link_to room_path(room, tab: "files"), class: class_names("room-nav-menu__item", "room-nav-menu__item--active": @active_room_tab == "files") do %>
+        <%= image_tag "attachment.svg", size: 18, class: "room-nav-menu__icon", aria: { hidden: "true" } %>
         Files
       <% end %>
       <hr class="room-nav-menu__divider" style="border: 0; border-top: 1px solid var(--color-border); margin: 0.25rem 0.15rem;">
       <div class="room-nav-menu__section-label" style="font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.45rem; text-transform: uppercase; opacity: 0.8;">Room</div>
-      <%= link_to room_info_path(room), class: "room-nav-menu__item", style: "display: flex; align-items: center; column-gap: 0.5rem; padding: 0.48rem 0.52rem; border-radius: 0.45rem; text-decoration: none; color: var(--color-text); pointer-events: auto;" do %>
-        <%= image_tag "settings.svg", size: 18, class: "colorize--black", aria: { hidden: "true" } %>
+      <%= link_to room_info_path(room), class: "room-nav-menu__item" do %>
+        <%= image_tag "settings.svg", size: 18, class: "room-nav-menu__icon", aria: { hidden: "true" } %>
         Room info
       <% end %>
     </div>

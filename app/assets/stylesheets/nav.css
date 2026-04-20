@@ -131,8 +131,13 @@
 }
 
 body.sidebar #nav .room-nav-menu__item img {
-  filter: none;
+  filter: brightness(0) invert(1);
   inline-size: 1rem;
+}
+
+.room-nav-menu__icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
 }
 
 .room-nav-menu__section-label {
@@ -156,7 +161,8 @@ body.sidebar #nav details[open] > summary.btn {
 
 @media (max-width: 100ch) {
   .room-nav-menu {
-    inset-inline-end: -0.05rem;
-    max-inline-size: min(78vw, 14rem);
+    inset-inline-end: max(0.4rem, env(safe-area-inset-right, 0px));
+    max-inline-size: min(78vw, calc(100vw - 0.8rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    min-inline-size: min(11.5rem, calc(100vw - 0.8rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   }
 }
