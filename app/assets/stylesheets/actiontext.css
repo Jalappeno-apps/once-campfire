@@ -133,6 +133,22 @@ trix-editor {
   }
 }
 
+trix-editor [data-trix-content-type~='application/vnd.campfire.mention'] {
+  align-items: center;
+  display: inline-flex;
+  line-height: 1.2;
+  vertical-align: middle;
+
+  .avatar,
+  .avatar img,
+  img {
+    block-size: 1.05rem !important;
+    inline-size: 1.05rem !important;
+    border-radius: 999px !important;
+    object-fit: cover !important;
+  }
+}
+
 [data-trix-content-type~="application/vnd.actiontext.opengraph-embed"] {
   * {
     text-decoration: none;

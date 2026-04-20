@@ -161,7 +161,8 @@ body.sidebar #nav details[open] > summary.btn {
 
 @media (max-width: 100ch) {
   .room-nav-menu {
-    inset-inline-end: max(0.4rem, env(safe-area-inset-right, 0px));
+    inset-inline-end: auto;
+    inset-inline-start: 0;
     max-inline-size: min(78vw, calc(100vw - 0.8rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
     min-inline-size: min(11.5rem, calc(100vw - 0.8rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   }
