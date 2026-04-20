@@ -66,17 +66,26 @@
   border-radius: 999px;
   color: inherit;
   display: inline-flex;
-  gap: 0.32rem;
+  gap: 0.38rem;
   line-height: 1;
-  padding: 0.14rem 0.5rem 0.14rem 0.18rem;
+  padding: 0.12rem 0.55rem 0.12rem 0.2rem;
   position: relative;
   text-decoration: none;
   z-index: 2;
 }
 
 .mention__avatar {
-  --avatar-size: 1.05rem;
-  --avatar-border-radius: 999px;
+  block-size: 1.05rem;
+  border-radius: 999px;
+  display: inline-flex;
+  inline-size: 1.05rem;
+  overflow: hidden;
+}
+
+.mention__avatar-img {
+  block-size: 100% !important;
+  inline-size: 100% !important;
+  object-fit: cover;
 }
 
 .mention__name {
@@ -89,6 +98,11 @@
   position: relative;
 }
 
+.mention--interactive:hover,
+.mention--interactive:focus-within {
+  z-index: 1200;
+}
+
 .mention-card {
   background: #0f131a;
   border: 1px solid #2a3444;
@@ -99,15 +113,20 @@
   inline-size: min(20rem, calc(100vw - 2rem));
   inset-block-start: calc(100% + 0.45rem);
   inset-inline-start: 0;
-  padding: 0.7rem;
+  padding: 0.75rem;
   position: absolute;
-  z-index: 20;
+  z-index: 1300;
+}
+
+.mention-card--above {
+  inset-block-end: calc(100% + 0.45rem);
+  inset-block-start: auto;
 }
 
 .mention--interactive:hover .mention-card,
 .mention--interactive:focus-within .mention-card {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .mention-card__header {
@@ -118,8 +137,17 @@
 }
 
 .mention-card__avatar {
-  --avatar-size: 2.1rem;
-  --avatar-border-radius: 999px;
+  block-size: 2.1rem;
+  border-radius: 999px;
+  display: inline-flex;
+  inline-size: 2.1rem;
+  overflow: hidden;
+}
+
+.mention-card__avatar-img {
+  block-size: 100% !important;
+  inline-size: 100% !important;
+  object-fit: cover;
 }
 
 .mention-card__identity {
@@ -130,11 +158,12 @@
 
 .mention-card__meta {
   color: #a7b2c8;
-  padding-inline-start: 0.1rem;
+  padding-inline: 0.1rem;
 }
 
 .mention-card__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.42rem;
   margin-block-start: 0.1rem;
 }

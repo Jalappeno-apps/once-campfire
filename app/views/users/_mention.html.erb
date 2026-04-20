@@ -3,13 +3,17 @@
       data-controller="mention-card"
       data-action="mouseenter->mention-card#show mouseleave->mention-card#hide focusin->mention-card#show focusout->mention-card#hide">
   <%= link_to user_path(user), class: "mention__chip txt-undecorated" do %>
-    <%= avatar_tag user, class: "mention__avatar" %>
+    <span class="mention__avatar" aria-hidden="true">
+      <%= user_avatar_img_tag user, class: "mention__avatar-img" %>
+    </span>
     <span class="mention__name">@<%= user.name %></span>
   <% end %>
 
   <div class="mention-card" role="dialog" aria-label="<%= user.name %> profile preview" hidden data-mention-card-target="card">
     <div class="mention-card__header">
-      <%= avatar_tag user, loading: :lazy, class: "mention-card__avatar" %>
+      <span class="mention-card__avatar" aria-hidden="true">
+        <%= user_avatar_img_tag user, loading: :lazy, class: "mention-card__avatar-img" %>
+      </span>
       <div class="mention-card__identity">
         <strong class="overflow-ellipsis"><%= user.name %></strong>
         <span class="txt-small"><%= user_presence_label(user) %></span>

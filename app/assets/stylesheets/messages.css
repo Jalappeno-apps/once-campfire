@@ -216,6 +216,11 @@
     }
   }
 
+  &:has(.mention--interactive:hover),
+  &:has(.mention--interactive:focus-within) {
+    z-index: 35;
+  }
+
   + .message--threaded {
     margin-block-start: calc((var(--message-space) + (var(--message-row-gap) * 2) - 2px) * -1);
   }
