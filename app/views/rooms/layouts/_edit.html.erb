@@ -6,7 +6,19 @@
   </div>
 <% end %>
 
-<section class="panel txt-align-center" style="view-transition-name: edit-room-<%= room.id %>">
+<section class="panel txt-align-center room-info-card" style="view-transition-name: edit-room-<%= room.id %>">
+  <div class="room-info-card__meta">
+    <strong><%= room_display_name(room) %></strong>
+    <div class="txt-small room-info-card__subtitle">
+      <span><%= room.users.count %> members</span>
+      <% if room.direct? %>
+        <% online_members = room.direct_peers_excluding(Current.user).count { |peer| user_online?(peer) } %>
+        <% if online_members.positive? %>
+          · <span><%= online_members %> online</span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
   <%= yield %>
 </section>
 

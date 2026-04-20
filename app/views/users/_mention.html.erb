@@ -1,4 +1,34 @@
-<div class="mention" sgid="<%= user.attachable_sgid %>">
-  <%= avatar_tag user %>
-  <%= user.name %>
-</div>
+<span class="mention mention--interactive"
+      sgid="<%= user.attachable_sgid %>"
+      data-controller="mention-card"
+      data-action="mouseenter->mention-card#show mouseleave->mention-card#hide focusin->mention-card#show focusout->mention-card#hide">
+  <%= link_to user_path(user), class: "mention__chip txt-undecorated" do %>
+    <%= avatar_tag user %>
+    <span class="mention__name">@<%= user.name %></span>
+  <% end %>
+
+  <div class="mention-card" role="dialog" aria-label="<%= user.name %> profile preview" hidden data-mention-card-target="card">
+    <div class="mention-card__header">
+      <figure class="avatar mention-card__avatar">
+        <%= avatar_tag user, loading: :lazy %>
+      </figure>
+      <div class="mention-card__identity">
+        <strong class="overflow-ellipsis"><%= user.name %></strong>
+        <span class="txt-small"><%= user_presence_label(user) %></span>
+      </div>
+    </div>
+    <div class="mention-card__meta txt-small">
+      <%= local_datetime_tag(Time.current, style: :time) %> local time
+    </div>
+    <div class="mention-card__actions">
+      <%= link_to user_path(user), class: "btn mention-card__action" do %>
+        <%= image_tag "person.svg", size: 16, aria: { hidden: "true" } %>
+        Profile
+      <% end %>
+      <%= link_to rooms_directs_path(user_ids: [ user.id ]), class: "btn mention-card__action", data: { turbo_method: :post } do %>
+        <%= image_tag "messages.svg", size: 16, aria: { hidden: "true" } %>
+        Message
+      <% end %>
+    </div>
+  </div>
+</span>

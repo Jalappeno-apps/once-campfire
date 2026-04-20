@@ -34,6 +34,9 @@ class UsersController < ApplicationController
   end
 
   def show
+    @recent_direct_rooms = recent_direct_rooms_for(@user)
+    @profile_stats = profile_stats_for(@user)
+    @primary_direct_room = primary_direct_room_for(@user)
   end
 
   private
@@ -64,6 +67,37 @@ class UsersController < ApplicationController
 
     def user_params
       params.require(:user).permit(:name, :avatar, :email_address, :password)
+    end
+
+    def recent_direct_rooms_for(user)
+      return [] unless Current.user && user && Current.account
+
+      Current.user.rooms_in_account(Current.account).directs.includes(:users).select { |room|
+        room.user_ids.include?(user.id) && room.id != params[:room_id].to_i
+      }.sort_by(&:updated_at).reverse.first(5)
+    end
+
+    def primary_direct_room_for(user)
+      return unless Current.user && user && Current.account
+
+      Current.user.rooms_in_account(Current.account).directs.includes(:users).select { |room|
+        room.user_ids.include?(user.id)
+      }.max_by(&:updated_at)
+    end
+
+    def profile_stats_for(user)
+      return {} unless Current.user && user && Current.account
+
+      rooms_in_account = Current.user.rooms_in_account(Current.account).includes(:users)
+      shared_rooms = rooms_in_account.select { |room| room.user_ids.include?(user.id) }
+      shared_direct_rooms = shared_rooms.select(&:direct?)
+
+      {
+        shared_rooms_count: shared_rooms.size,
+        shared_channels_count: shared_rooms.count { |room| !room.direct? },
+        first_direct_started_at: shared_direct_rooms.map(&:created_at).compact.min,
+        last_direct_activity_at: shared_direct_rooms.map(&:updated_at).compact.max
+      }
     end
 
     def switch_session_to_workspace(account)

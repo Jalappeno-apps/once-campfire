@@ -1,4 +1,8 @@
 module RoomsHelper
+  ONLINE_WINDOW = 5.minutes
+  FILE_KIND_ALL = "all"
+  FILE_KINDS = [ "documents", "media", "other" ].freeze
+
   def link_to_room(room, **attributes, &)
     link_to room_path(room), **attributes, data: {
       rooms_list_target: "room",
@@ -57,14 +61,135 @@ module RoomsHelper
   end
 
   def room_display_name(room, for_user: Current.user)
+    @room_display_name_cache ||= {}
+    cache_key = [ room.id, for_user&.id ]
+    return @room_display_name_cache[cache_key] if @room_display_name_cache.key?(cache_key)
+
+    @room_display_name_cache[cache_key] =
+      if room.direct?
+        names =
+          if room.association(:users).loaded?
+            room.users.reject { |u| for_user && u.id == for_user.id }.map(&:name)
+          else
+            room.users.without(for_user).pluck(:name)
+          end
+        names.to_sentence.presence || for_user&.name
+      else
+        room.name
+      end
+  end
+
+  def room_info_path(room)
     if room.direct?
-      room.users.without(for_user).pluck(:name).to_sentence.presence || for_user&.name
+      peers = room.direct_peers_excluding(Current.user)
+      return user_path(peers.first) if peers.one?
+
+      return edit_rooms_direct_path(room)
+    end
+
+    if room.open?
+      edit_rooms_open_path(room)
+    elsif room.closed?
+      edit_rooms_closed_path(room)
     else
-      room.name
+      room_path(room)
+    end
+  end
+
+  def user_online?(user)
+    return false unless user
+
+    user_last_active_at(user)&.>=(ONLINE_WINDOW.ago) && !user.availability_invisible?
+  end
+
+  def user_last_active_at(user)
+    return unless user
+
+    account_presence_last_active_at[user.id]
+  end
+
+  def user_presence_label(user)
+    return "Offline" unless user
+
+    case user_presence_state(user)
+    when :online
+      "Online"
+    when :away
+      "Away"
+    when :do_not_disturb
+      "Do not disturb"
+    else
+      last_active_at = user_last_active_at(user)
+      last_active_at ? "Last active #{time_ago_in_words(last_active_at)} ago" : "Offline"
+    end
+  end
+
+  def user_presence_state(user)
+    return :offline unless user_online?(user)
+    return :do_not_disturb if user.availability_do_not_disturb?
+    return :away if user.availability_away?
+
+    :online
+  end
+
+  def user_presence_badge_class(user)
+    case user_presence_state(user)
+    when :online
+      "profile-presence-badge--online"
+    when :away
+      "profile-presence-badge--away"
+    when :do_not_disturb
+      "profile-presence-badge--dnd"
+    else
+      "profile-presence-badge--offline"
+    end
+  end
+
+  def user_status_text(user)
+    user.active_custom_status || user_presence_label(user)
+  end
+
+  def room_direct_presence_title(room)
+    peers = room.direct_peers_excluding(Current.user).reject(&:bot?)
+    return "" if peers.empty?
+
+    online_count = peers.count { |peer| user_online?(peer) }
+    return "#{online_count} online" if online_count.positive?
+
+    last_seen = peers.map { |peer| user_last_active_at(peer) }.compact.max
+    return "Offline" unless last_seen
+
+    "Last active #{time_ago_in_words(last_seen)} ago"
+  end
+
+  def file_kind_for_attachment(attachment)
+    content_type = attachment&.content_type.to_s
+    filename = attachment&.filename.to_s.downcase
+
+    return "media" if content_type.start_with?("image/", "video/", "audio/")
+    return "documents" if content_type.start_with?("text/")
+    return "documents" if content_type.start_with?("application/pdf", "application/msword", "application/vnd", "application/rtf", "application/json", "application/xml")
+    return "documents" if filename.match?(/\.(txt|pdf|doc|docx|xls|xlsx|csv|ppt|pptx|md|json|xml|rtf)\z/)
+
+    "other"
+  end
+
+  def file_kind_label(kind)
+    case kind
+    when "documents" then "Documents"
+    when "media" then "Media"
+    when "other" then "Other files"
+    else "All files"
     end
   end
 
   private
+    def account_presence_last_active_at
+      return {} unless Current.account
+
+      @account_presence_last_active_at ||= Session.where(account_id: Current.account.id).group(:user_id).maximum(:last_active_at)
+    end
+
     def composer_data_options(room)
       {
         controller: "composer drop-target",

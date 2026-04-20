@@ -4,6 +4,7 @@ class PresenceChannel < RoomChannel
 
   def present
     membership.present
+    refresh_session_presence
 
     broadcast_read_room
   end
@@ -14,6 +15,7 @@ class PresenceChannel < RoomChannel
 
   def refresh
     membership.refresh_connection
+    refresh_session_presence
   end
 
   private
@@ -23,5 +25,9 @@ class PresenceChannel < RoomChannel
 
     def broadcast_read_room
       ActionCable.server.broadcast "user_#{current_user.id}_reads", { room_id: membership.room_id }
+    end
+
+    def refresh_session_presence
+      connection.current_session&.refresh_presence! if connection.respond_to?(:current_session)
     end
 end

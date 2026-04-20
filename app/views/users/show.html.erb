@@ -15,11 +15,12 @@
   </div>
 <% end %>
 
-<section class="panel txt-align-center">
-  <div class="flex flex-column gap <%= "banned" if @user.banned? %>">
-    <div class="avatar txt-xx-large center" style="background: white">
+<section class="panel txt-align-center" style="max-inline-size: 50rem;">
+  <div class="flex flex-column gap <%= "banned" if @user.banned? %> profile-card">
+    <%= link_to fresh_user_avatar_path(@user), class: "avatar txt-xx-large center profile-card__avatar", title: "Open full profile image",
+          data: { lightbox_target: "image", action: "lightbox#open", lightbox_url_value: fresh_user_avatar_path(@user) } do %>
       <%= image_tag fresh_user_avatar_path(@user), alt: "Profile avatar", class: "avatar" %>
-    </div>
+    <% end %>
 
     <% if @user.bot? %>
       <div class="pad-double--inline push--inline push--block-start">
@@ -31,26 +32,124 @@
       </div>
     <% else %>
       <% unless @user.deactivated? %>
-        <div class="flex flex-column gap" style="--row-gap: calc(var(--block-space) / 3)">
+        <div class="profile-card__header" style="background: rgb(255 255 255 / 4%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 1rem; padding: 1rem 1.2rem;">
           <h1 class="txt-x-large txt-tight-lines margin-none"><%= @user.name %></h1>
-          <% if Current.user.can_administer? %>
-            <div><%= mail_to @user.email_address %></div>
+          <div class="margin-block-start-half" style="display: inline-flex; align-items: center; column-gap: 0.45rem; background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 16%); border-radius: 999px; padding: 0.32rem 0.7rem;">
+            <span class="profile-presence-badge__dot" aria-hidden="true" style="background: <%= user_presence_state(@user) == :online ? "var(--color-positive)" : "rgb(190 190 190)" %>;"></span>
+            <span><%= user_presence_label(@user) %></span>
+          </div>
+          <% if (custom_status = @user.active_custom_status) %>
+            <div class="margin-block-start-half" style="font-weight: 600; opacity: 0.9;"><%= custom_status %></div>
           <% end %>
-          <div><%= @user.bio %></div>
         </div>
 
         <% if @user.active? %>
-          <div class="pad-inline-double margin-inline margin-block-start">
-            <%= button_to rooms_directs_path(user_ids: [ @user.id ]), class: "btn btn--reversed full-width txt-large" do %>
-              <%= image_tag "messages.svg", aria: { hidden: "true", label: "Direct message #{@user.name}" } %>
+          <section style="display: grid; gap: 0.45rem; grid-template-columns: repeat(2, minmax(0, 1fr));">
+            <%= button_to rooms_directs_path(user_ids: [ @user.id ]), class: "btn btn--reversed full-width", style: "min-block-size: 2.85rem;" do %>
+              <%= image_tag "messages.svg", aria: { hidden: "true" }, size: 18 %>
+              Message
             <% end %>
+            <% if @primary_direct_room %>
+              <%= link_to room_path(@primary_direct_room, tab: "files"), class: "btn full-width", style: "min-block-size: 2.85rem;" do %>
+                <%= image_tag "attachment.svg", aria: { hidden: "true" }, size: 18 %>
+                View shared files
+              <% end %>
+            <% else %>
+              <span class="btn full-width" style="opacity: 0.6; pointer-events: none; min-block-size: 2.85rem;">
+                <%= image_tag "attachment.svg", aria: { hidden: "true" }, size: 18 %>
+                View shared files
+              </span>
+            <% end %>
+            <%= link_to searches_path(query: @user.name), class: "btn full-width", style: "grid-column: 1 / -1; min-block-size: 2.85rem;" do %>
+              <%= image_tag "search.svg", aria: { hidden: "true" }, size: 18 %>
+              Search conversations
+            <% end %>
+          </section>
+        <% end %>
+
+        <section class="txt-align-start" style="display: grid; gap: 0.45rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));">
+          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
+            <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Shared rooms</div>
+            <div style="font-size: 1.35rem; font-weight: 700; line-height: 1.2;"><%= @profile_stats[:shared_rooms_count] || 0 %></div>
+          </article>
+          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
+            <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Shared channels</div>
+            <div style="font-size: 1.35rem; font-weight: 700; line-height: 1.2;"><%= @profile_stats[:shared_channels_count] || 0 %></div>
+          </article>
+          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
+            <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">First direct</div>
+            <div style="font-size: 1rem; font-weight: 650; line-height: 1.25;">
+              <% if @profile_stats[:first_direct_started_at] %>
+                <%= local_datetime_tag(@profile_stats[:first_direct_started_at], style: :date) %>
+              <% else %>
+                Not started
+              <% end %>
+            </div>
+          </article>
+          <article style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.85rem; padding: 0.7rem 0.8rem;">
+            <div style="font-size: 0.74rem; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.75; font-weight: 700;">Last direct activity</div>
+            <div style="font-size: 1rem; font-weight: 650; line-height: 1.25;">
+              <% if @profile_stats[:last_direct_activity_at] %>
+                <%= time_ago_in_words(@profile_stats[:last_direct_activity_at]) %> ago
+              <% else %>
+                No direct history
+              <% end %>
+            </div>
+          </article>
+        </section>
+
+        <% if @user.bio.present? %>
+          <div class="profile-card__about" style="background: rgb(255 255 255 / 6%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.9rem; padding: 0.9rem 1rem;">
+            <p class="margin-none"><%= @user.bio %></p>
           </div>
+        <% else %>
+          <details class="profile-card__about" style="background: rgb(255 255 255 / 6%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.9rem; padding: 0.7rem 0.9rem;">
+            <summary class="btn" style="--btn-background: transparent; --btn-border-color: transparent; --btn-padding: 0; justify-content: start; font-weight: 700;">About</summary>
+            <p class="margin-none margin-block-start-half">No profile blurb yet.</p>
+          </details>
+        <% end %>
 
-          <% if Current.user.can_administer? %>
-            <hr class="margin-block-start borderless">
+        <section class="profile-card__section txt-align-start" style="background: rgb(255 255 255 / 4%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.95rem; padding: 0.95rem;">
+          <h2 class="profile-card__section-title margin-none">Contact information</h2>
+          <div class="profile-card__section-body profile-card__rows" style="display: grid; gap: 0.55rem;">
+            <div class="profile-card__row" style="background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem;">
+              <div class="profile-card__row-label">Email</div>
+              <div class="profile-card__row-value">
+                <% if Current.user.can_administer? || Current.user == @user %>
+                  <%= mail_to @user.email_address %>
+                <% else %>
+                  <%= @user.email_address.present? ? @user.email_address.sub(/(?<=.).(?=[^@]*?@)/, "•") : "Hidden" %>
+                <% end %>
+              </div>
+            </div>
+            <div class="profile-card__row" style="background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem;">
+              <div class="profile-card__row-label">Current time (workspace)</div>
+              <div class="profile-card__row-value"><%= local_datetime_tag(Time.current, style: :time) %></div>
+            </div>
+            <div class="profile-card__row" style="background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem;">
+              <div class="profile-card__row-label">Timezone setting</div>
+              <div class="profile-card__row-value"><%= Time.zone.tzinfo.name %> (workspace default; personal timezone not set)</div>
+            </div>
+          </div>
+        </section>
 
-            <%= render "users/profiles/transfer", user: @user %>
-          <% end %>
+        <% if @recent_direct_rooms.present? %>
+          <section class="profile-card__section txt-align-start" style="background: rgb(255 255 255 / 4%); border: 1px solid rgb(255 255 255 / 12%); border-radius: 0.95rem; padding: 0.95rem;">
+            <h2 class="profile-card__section-title margin-none">Recent DMs</h2>
+            <div class="profile-card__dm-list" style="display: grid; gap: 0.35rem;">
+              <% @recent_direct_rooms.each do |direct_room| %>
+                <%= link_to room_path(direct_room), class: "profile-card__dm-item txt-undecorated", style: "display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.45rem; background: rgb(255 255 255 / 8%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.6rem; padding: 0.6rem 0.7rem; color: var(--color-text);" do %>
+                  <%= image_tag "messages.svg", aria: { hidden: "true" }, size: 16, class: "profile-card__dm-icon", style: "opacity: 0.9; filter: invert(100%);" %>
+                  <span class="overflow-ellipsis"><%= room_display_name(direct_room) %></span>
+                <% end %>
+              <% end %>
+            </div>
+          </section>
+        <% end %>
+
+        <% if @user.active? && Current.user.can_administer? %>
+          <hr class="margin-block-start borderless">
+          <%= render "users/profiles/transfer", user: @user %>
         <% end %>
 
         <% if Current.user.can_administer? && Current.user != @user %>

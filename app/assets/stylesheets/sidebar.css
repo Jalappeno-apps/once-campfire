@@ -486,7 +486,7 @@ body.sidebar #sidebar {
   inline-size: 0.55rem;
 }
 
-/* Peer has this room open (membership `connected?` — same signal as presence in-thread) */
+/* Direct peer is online (workspace activity based presence). */
 #sidebar .sidebar-row__prefix--dm-online::before {
   background-color: var(--color-positive);
   box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);

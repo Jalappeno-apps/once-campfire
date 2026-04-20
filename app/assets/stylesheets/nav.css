@@ -66,3 +66,97 @@
     --left-offset: var(--inline-space);
   }
 }
+
+.room-nav-menu {
+  --panel-border: color-mix(in oklab, var(--color-border), transparent 15%);
+
+  background: color-mix(in oklab, var(--color-bg), black 8%);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.85em;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  inset: calc(var(--btn-size) + 0.4rem) 0 auto auto;
+  min-inline-size: 11.5rem;
+  padding: 0.35rem;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 12;
+}
+
+.room-nav-dropdown {
+  flex: 0 0 auto;
+  inline-size: var(--btn-size);
+  min-inline-size: var(--btn-size);
+  position: relative;
+}
+
+.room-nav-dropdown__trigger {
+  --btn-padding: 0;
+  block-size: var(--btn-size);
+  inline-size: var(--btn-size);
+  min-inline-size: var(--btn-size);
+}
+
+.room-nav-menu__item {
+  align-items: center;
+  color: color-mix(in oklab, var(--color-text), white 2%);
+  column-gap: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  font-size: 1.03rem;
+  font-weight: 600;
+  inline-size: 100%;
+  justify-content: start;
+  line-height: 1.2;
+  min-inline-size: 0;
+  border: 0;
+  border-radius: 0.45rem;
+  padding: 0.48rem 0.52rem;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+
+  @media (any-hover: hover) {
+    &:where(:not(:active):hover) {
+      background: color-mix(in oklab, var(--color-border), var(--color-bg) 26%);
+    }
+  }
+}
+
+.room-nav-menu__item.room-nav-menu__item--active {
+  background: color-mix(in oklab, var(--color-border), var(--color-bg) 32%);
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+body.sidebar #nav .room-nav-menu__item img {
+  filter: none;
+  inline-size: 1rem;
+}
+
+.room-nav-menu__section-label {
+  color: color-mix(in oklab, var(--color-text), var(--color-bg) 42%);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.06rem 0.45rem;
+  text-transform: uppercase;
+}
+
+.room-nav-menu__divider {
+  border: 0;
+  border-top: 1px solid color-mix(in oklab, var(--color-border), transparent 8%);
+  margin: 0.18rem 0.15rem;
+}
+
+body.sidebar #nav details[open] > summary.btn {
+  --btn-background: color-mix(in oklab, var(--color-border), transparent 22%);
+}
+
+@media (max-width: 100ch) {
+  .room-nav-menu {
+    inset-inline-end: -0.05rem;
+    max-inline-size: min(78vw, 14rem);
+  }
+}

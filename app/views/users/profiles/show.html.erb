@@ -89,6 +89,31 @@
         </label>
       </div>
 
+      <div class="flex align-center gap">
+        <span class="btn" aria-hidden="true">
+          <%= image_tag "alert.svg", aria: { hidden: "true" }, size: 24, class: "colorize--black" %>
+        </span>
+
+        <label class="flex align-center gap flex-item-grow input input--actor">
+          <%= form.select :availability_status,
+                User.availability_statuses.keys.map { |key| [ key.humanize, key ] },
+                {},
+                class: "input txt-large" %>
+          <span class="fill-shade txt-small">Availability</span>
+        </label>
+      </div>
+
+      <div class="flex align-start gap">
+        <span class="btn" aria-hidden="true">
+          <%= image_tag "messages-outlined.svg", aria: { hidden: "true" }, size: 24, class: "colorize--black" %>
+        </span>
+
+        <label class="flex align--center gap flex-item--grow input input--actor">
+          <%= form.text_field :status_emoji, class: "input txt-large", placeholder: "Emoji", maxlength: 16, required: false %>
+          <%= form.text_field :custom_status, class: "input txt-large", placeholder: "Custom status (e.g. Heads down)", maxlength: 80, required: false %>
+        </label>
+      </div>
+
       <%= profile_form_submit_button %>
     </div>
   <% end %>

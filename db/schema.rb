@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_04_17_000004) do
+ActiveRecord::Schema[8.2].define(version: 2026_04_20_103000) do
   create_table "account_memberships", force: :cascade do |t|
     t.integer "account_id", null: false
     t.datetime "created_at", null: false
@@ -225,14 +225,18 @@ ActiveRecord::Schema[8.2].define(version: 2026_04_17_000004) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.integer "availability_status", default: 0, null: false
     t.text "bio"
     t.string "bot_token"
     t.datetime "created_at", null: false
+    t.string "custom_status"
     t.string "email_address"
     t.string "name", null: false
     t.string "password_digest"
     t.integer "role", default: 0, null: false
     t.integer "status", default: 0, null: false
+    t.string "status_emoji"
+    t.datetime "status_expires_at"
     t.datetime "updated_at", null: false
     t.index ["bot_token"], name: "index_users_on_bot_token", unique: true
     t.index ["email_address"], name: "index_users_on_email_address", unique: true

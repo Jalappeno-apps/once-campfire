@@ -7,20 +7,57 @@
 <% end %>
 
 <div class="panel txt-align-center">
-  <section class="directs--edit margin-block-end">
-    <% users = @room.users.many? ? @room.users.without(Current.user) : @room.users %>
-    <% users.each do | user | %>
-      <div class="member flex flex-column gap fill-shade pad border-radius">
-        <figure class="avatar center" style="--avatar-border-radius: 10ch; --avatar-size: 10ch;" >
+  <section class="margin-block-end room-summary txt-align-start">
+    <h2 class="margin-none room-summary__title">Conversation details</h2>
+    <div class="room-summary__grid">
+      <div class="room-summary__row">
+        <span class="room-summary__label">Created</span>
+        <span class="room-summary__value">
+          <%= local_datetime_tag(@room.created_at, style: :date) %>
+        </span>
+      </div>
+      <div class="room-summary__row">
+        <span class="room-summary__label">Last activity</span>
+        <span class="room-summary__value">
+          <% if @last_message_at %>
+            <%= time_ago_in_words(@last_message_at) %> ago
+          <% else %>
+            No messages yet
+          <% end %>
+        </span>
+      </div>
+      <div class="room-summary__row">
+        <span class="room-summary__label">Members</span>
+        <span class="room-summary__value"><%= @room_members.size %></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="margin-block-end room-members">
+    <h2 class="margin-none-block-end txt-align-start room-members__title">People in this conversation</h2>
+    <% @room_members.each do | user | %>
+      <div class="member room-members__item flex align-center gap">
+        <figure class="avatar" style="--avatar-border-radius: 10ch; --avatar-size: 2.8rem;" >
           <%= avatar_tag user, loading: :lazy %>
         </figure>
-
-        <strong><%= user.name %></strong>
+        <div class="txt-align-start min-width room-members__content">
+          <strong class="overflow-ellipsis"><%= user.name %></strong>
+          <div class="txt-small room-members__presence"><%= user_presence_label(user) %></div>
+        </div>
       </div>
     <% end %>
   </section>
 
-  <%= button_to rooms_direct_url(@room), method: :delete, class: "btn btn--negative center", aria: { label: "Delete direct message" },
+  <% if @room_members.one? %>
+    <div class="margin-block-end pad-inline-double margin-inline">
+      <%= link_to user_path(@room_members.first), class: "btn btn--reversed full-width txt-large" do %>
+        <%= image_tag "arrow-right.svg", aria: { hidden: "true" }, size: 20 %>
+        View profile
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= button_to rooms_direct_url(@room), method: :delete, class: "btn btn--negative center room-members__danger-btn", aria: { label: "Delete direct message" },
       data: { turbo_confirm: "Are you sure you want to delete this direct message and all messages in it? This can’t be undone." } do %>
     <%= image_tag "trash.svg", aria: { hidden: "true" } %>
     Direct message

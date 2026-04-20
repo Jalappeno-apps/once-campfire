@@ -25,6 +25,86 @@
   }
 }
 
+.room-files {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-inline-size: 72rem;
+  padding: 0.75rem 0 1rem;
+  width: 100%;
+}
+
+.room-files--standalone {
+  margin-block-start: 0;
+}
+
+.room-files-page {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  min-block-size: 100dvh;
+  padding-inline: clamp(0.9rem, 2.4vw, 2rem);
+  padding-block-start: calc(var(--navbar-height) + 0.8rem);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.sidebar #main-content:has(.room-files-page) {
+  justify-content: start;
+}
+
+.room-files__load-more {
+  display: flex;
+  justify-content: center;
+  margin-block: 1rem 0.5rem;
+}
+
+.room-files__list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none !important;
+  margin: 0;
+  padding: 0 !important;
+  padding-inline-start: 0 !important;
+}
+
+.room-files__item {
+  list-style: none !important;
+  margin: 0;
+}
+
+.room-files__entry {
+  background-color: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.8rem;
+  color: var(--color-text);
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem 0.9rem;
+  text-decoration: none;
+}
+
+.room-files__entry:hover {
+  background-color: rgb(255 255 255 / 10%);
+}
+
+.room-files__name {
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
+.room-files__meta {
+  color: rgb(255 255 255 / 70%);
+  font-size: 0.95rem;
+}
+
+.room-files__empty {
+  background-color: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.8rem;
+  color: rgb(255 255 255 / 70%);
+  padding: 1.2rem;
+}
+
 .message-area__return-to-latest {
   animation: pulsing-outline 2s infinite both;
   outline: 0 solid var(--color-selected-dark);

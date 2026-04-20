@@ -78,6 +78,79 @@
   }
 }
 
+.mention__chip {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  position: relative;
+  z-index: 2;
+}
+
+.mention__name {
+  display: inline-block;
+}
+
+.mention--interactive {
+  position: relative;
+}
+
+.mention-card {
+  background: #171b22;
+  border: 1px solid #2d3440;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  color: #f4f6ff;
+  display: none;
+  inline-size: min(22rem, calc(100vw - 2rem));
+  inset-block-start: calc(100% + 0.35rem);
+  inset-inline-start: 0;
+  padding: 0.6rem;
+  position: absolute;
+  z-index: 20;
+}
+
+.mention--interactive:hover .mention-card,
+.mention--interactive:focus-within .mention-card {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.mention-card__header {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: auto 1fr;
+}
+
+.mention-card__avatar {
+  --avatar-size: 2.2rem;
+}
+
+.mention-card__identity {
+  display: grid;
+  gap: 0.1rem;
+  min-inline-size: 0;
+}
+
+.mention-card__meta {
+  color: #b7bfcd;
+}
+
+.mention-card__actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.mention-card__action {
+  --btn-background: #232a36;
+  --btn-border-color: #364155;
+  --btn-padding: 0.35rem 0.65rem;
+  --btn-border-radius: 0.55rem;
+
+  color: #f4f6ff;
+  min-inline-size: 0;
+}
+
 blockquote .attachment--preview {
   --avatar-size: 2.5ch;
   --avatar-border-radius: 2em;

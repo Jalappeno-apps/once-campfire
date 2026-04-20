@@ -12,6 +12,8 @@ class Rooms::DirectsController < RoomsController
   end
 
   def edit
+    @room_members = @room.users.many? ? @room.users.without(Current.user) : @room.users
+    @last_message_at = @room.messages.maximum(:created_at)
   end
 
   private

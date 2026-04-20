@@ -1,5 +1,6 @@
 class Session < ApplicationRecord
-  ACTIVITY_REFRESH_RATE = 1.hour
+  ACTIVITY_REFRESH_RATE = 2.minutes
+  PRESENCE_REFRESH_RATE = 1.minute
 
   has_secure_token
 
@@ -16,5 +17,11 @@ class Session < ApplicationRecord
     if last_active_at.before?(ACTIVITY_REFRESH_RATE.ago)
       update! user_agent: user_agent, ip_address: ip_address, last_active_at: Time.now
     end
+  end
+
+  def refresh_presence!
+    return unless last_active_at.before?(PRESENCE_REFRESH_RATE.ago)
+
+    update_columns(last_active_at: Time.current, updated_at: Time.current)
   end
 end

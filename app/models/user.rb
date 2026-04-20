@@ -2,6 +2,7 @@ class User < ApplicationRecord
   include Avatar, Bannable, Bot, Mentionable, Role, Transferable
 
   attr_accessor :provisioning_account
+  attribute :availability_status, :integer, default: 0
 
   has_many :account_memberships, dependent: :delete_all
   has_many :accounts, through: :account_memberships
@@ -22,6 +23,10 @@ class User < ApplicationRecord
   has_many :bans, dependent: :destroy
 
   enum :status, %i[ active deactivated banned ], default: :active
+  enum :availability_status, { available: 0, away: 1, do_not_disturb: 2, invisible: 3 }, default: :available, prefix: :availability
+
+  validates :custom_status, length: { maximum: 80 }
+  validates :status_emoji, length: { maximum: 16 }
 
   has_secure_password validations: false
 
@@ -64,6 +69,13 @@ class User < ApplicationRecord
 
   def title
     [ name, bio ].compact_blank.join(" – ")
+  end
+
+  def active_custom_status
+    return unless custom_status.present?
+    return if status_expires_at.present? && status_expires_at.past?
+
+    [ status_emoji, custom_status ].compact_blank.join(" ")
   end
 
   def deactivate

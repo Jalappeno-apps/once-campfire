@@ -1,9 +1,9 @@
-<% room, unread, viewer_id =
+<% room, unread =
      if (m = local_assigns[:membership])
-       [ m.room, m.unread?, m.user_id ]
+      [ m.room, m.unread? ]
      else
        r = local_assigns[:room]
-       [ r, local_assigns.fetch(:unread, false), Current.user&.id ]
+      [ r, local_assigns.fetch(:unread, false) ]
      end %>
 <% list_data = { sidebar_active_room_target: "row" }
    if room.direct?
@@ -11,17 +11,18 @@
    else
      list_data[:sorted_list_name] = room.name
    end %>
-<% peer_active_in_room =
-     room.direct? && viewer_id && room.memberships.reject { |m| m.user_id == viewer_id }.any?(&:connected?) %>
+<% direct_peers = room.direct? ? room.direct_peers_excluding(Current.user).reject(&:bot?) : [] %>
+<% peer_online = room.direct? && direct_peers.any? { |peer| user_online?(peer) } %>
+<% direct_presence_title = room.direct? ? room_direct_presence_title(room) : "" %>
 <%= link_to_room room,
       id: dom_id(room, :list),
       data: list_data,
       style: "--column-gap: 0.5em",
       class: [ "sidebar-row align-center gap room btn txt-nowrap", "unread": unread ] do %>
   <% if room.direct? %>
-    <span class="sidebar-row__prefix sidebar-row__prefix--dm <%= "sidebar-row__prefix--dm-online" if peer_active_in_room %>"
+    <span class="sidebar-row__prefix sidebar-row__prefix--dm <%= "sidebar-row__prefix--dm-online" if peer_online %>"
           aria-hidden="true"
-          title="<%= peer_active_in_room ? "Active in this chat" : "" %>"></span>
+          title="<%= direct_presence_title %>"></span>
     <span class="sidebar-row__label txt-nowrap overflow-ellipsis">
       <span class="for-screen-reader">Direct message with</span>
       <%= room_display_name(room) %>

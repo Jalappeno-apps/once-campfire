@@ -9,6 +9,65 @@
 
 <% content_for :sidebar, sidebar_turbo_frame_tag(src: user_sidebar_path) %>
 
+<% if @active_room_tab == "files" %>
+  <section class="room-files-page">
+    <div class="room-files room-files--standalone">
+      <header style="display: grid; gap: 0.6rem; margin-block-end: 0.8rem;">
+        <h2 class="margin-none txt-align-start">Files</h2>
+      <%= form_with url: room_path(@room), method: :get, local: true, class: "room-files__search" do %>
+        <%= hidden_field_tag :tab, "files" %>
+        <%= hidden_field_tag :kind, @file_kind %>
+        <label class="for-screen-reader" for="files_search">Search files</label>
+        <%= text_field_tag :q, @file_query, id: "files_search", placeholder: "Search files by name", class: "input room-files__search-input", style: "background: #171b22; border: 1px solid #2d3440; border-radius: 0.7rem; color: #f4f6ff; padding: 0.68rem 0.8rem; inline-size: 100%;" %>
+      <% end %>
+        <nav style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+          <% ([RoomsHelper::FILE_KIND_ALL] + RoomsHelper::FILE_KINDS).each do |kind| %>
+            <%= link_to room_path(@room, tab: "files", kind: kind, q: @file_query.presence), class: "btn txt-small", style: "border-radius: 999px; #{kind == @file_kind ? "--btn-background: #2a3444; --btn-border-color: #4a5a73;" : "--btn-background: #171b22; --btn-border-color: #2d3440;"}" do %>
+              <%= file_kind_label(kind) %>
+            <% end %>
+          <% end %>
+        </nav>
+      </header>
+
+      <% if @file_messages.any? %>
+        <% grouped_files = @file_messages.group_by { |m| file_kind_for_attachment(m.attachment) } %>
+        <% ordered_groups = @file_kind == RoomsHelper::FILE_KIND_ALL ? RoomsHelper::FILE_KINDS : [ @file_kind ] %>
+        <% ordered_groups.each do |kind| %>
+          <% next if grouped_files[kind].blank? %>
+          <section style="margin-block-end: 1rem;">
+            <h3 class="txt-align-start margin-none" style="font-size: 1rem; opacity: 0.88; margin-block-end: 0.45rem;"><%= file_kind_label(kind) %></h3>
+            <div class="room-files__list" style="display: grid; gap: 0.75rem; margin: 0; padding: 0;">
+              <% grouped_files[kind].each do |message| %>
+                <%= link_to room_at_message_path(@room, message), class: "room-files__entry txt-undecorated", style: "display: grid; gap: 0.36rem; background: #171b22; border: 1px solid #2d3440; border-radius: 0.82rem; padding: 0.82rem 0.9rem; color: #f4f6ff; text-decoration: none;" do %>
+                  <div class="room-files__name" style="display: flex; align-items: center; gap: 0.5rem; min-inline-size: 0;">
+                    <%= image_tag "attachment.svg", size: 18, aria: { hidden: "true" }, style: "opacity: 0.9;" %>
+                    <strong class="overflow-ellipsis" style="font-size: 1.1rem;"><%= message.attachment.filename.to_s %></strong>
+                  </div>
+                  <div class="room-files__meta txt-small" style="color: #b7bfcd;">
+                    Shared by <%= message.creator&.name || "System" %> · <%= time_ago_in_words(message.created_at) %> ago
+                  </div>
+                  <div class="room-files__meta txt-small" style="color: #9ca6b8;">
+                    <%= number_to_human_size(message.attachment.byte_size) %> ·
+                    <%= File.extname(message.attachment.filename.to_s).delete(".").upcase.presence || message.attachment.content_type.to_s.split("/").last.to_s.upcase %>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </section>
+        <% end %>
+        <% if @file_has_more && (last_message = @file_messages.last) %>
+          <div class="room-files__load-more">
+            <%= link_to "Load older files", room_path(@room, tab: "files", kind: @file_kind, q: @file_query.presence, before_created_at: last_message.created_at.iso8601, before_id: last_message.id), class: "btn" %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="room-files__empty txt-align-center" style="background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 14%); border-radius: 0.8rem; color: rgb(255 255 255 / 70%); padding: 1.2rem;">
+          No files shared here yet.
+        </div>
+      <% end %>
+    </div>
+  </section>
+<% else %>
 <%= message_area_tag(@room) do %>
   <%= render "messages/template" %>
 
@@ -22,3 +81,4 @@
 <% end %>
 
 <%= render "rooms/show/composer", room: @room %>
+<% end %>

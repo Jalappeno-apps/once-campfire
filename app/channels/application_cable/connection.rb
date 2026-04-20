@@ -2,16 +2,17 @@ module ApplicationCable
   class Connection < ActionCable::Connection::Base
     include Authentication::SessionLookup
 
-    identified_by :current_user
+    identified_by :current_user, :current_session
 
     def connect
-      self.current_user = find_verified_user
+      self.current_session = find_verified_session
+      self.current_user = current_session.user
     end
 
     private
-      def find_verified_user
+      def find_verified_session
         if verified_session = find_session_by_cookie
-          verified_session.user
+          verified_session
         else
           reject_unauthorized_connection
         end
