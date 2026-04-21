@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campfire – Connect</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f8fa;
+      color: #2f3440;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f1115; color: #e8edf7; }
+      .card { background: #171a21; border-color: #2a2f3a; }
+      input { background: #11151d; border-color: #2a2f3a; color: #e8edf7; }
+      input::placeholder { color: #a6afc1; }
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dfe3ea;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    .logo {
+      display: block;
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 1.25rem;
+      border-radius: 12px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 0.5rem;
+      color: inherit;
+    }
+
+    p {
+      font-size: 0.875rem;
+      color: #5a6270;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    @media (prefers-color-scheme: dark) { p { color: #a6afc1; } }
+
+    input {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      font-size: 0.9375rem;
+      border: 1px solid #dfe3ea;
+      border-radius: 8px;
+      background: #fff;
+      color: #2f3440;
+      margin-bottom: 0.75rem;
+      outline: none;
+    }
+
+    input:focus { border-color: #246bff; box-shadow: 0 0 0 3px rgba(36,107,255,0.12); }
+
+    button {
+      width: 100%;
+      padding: 0.625rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      background: #246bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover { background: #1a5ce0; }
+
+    .error {
+      font-size: 0.8125rem;
+      color: #c0392b;
+      margin-top: 0.5rem;
+      text-align: center;
+      min-height: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" id="logo" src="" alt="Campfire">
+    <h1>Connect your Campfire</h1>
+    <p>Enter the domain where your Campfire server is hosted.</p>
+    <input id="domain" type="text" placeholder="chat.example.com" autocomplete="off" spellcheck="false">
+    <button id="save">Save and connect</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById("domain")
+    const btn = document.getElementById("save")
+    const error = document.getElementById("error")
+
+    window.campfireDesktop.getLogoPath().then(p => {
+      if (p) document.getElementById("logo").src = p
+    })
+
+    window.campfireDesktop.getDomain().then(domain => {
+      if (domain) input.value = domain
+    })
+
+    async function save() {
+      error.textContent = ""
+      const result = await window.campfireDesktop.saveDomain(input.value)
+      if (result.error) error.textContent = result.error
+    }
+
+    btn.addEventListener("click", save)
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") save() })
+    input.focus()
+  </script>
+</body>
+</html>

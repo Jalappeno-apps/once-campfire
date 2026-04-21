@@ -42,3 +42,7 @@ app/assets/builds/*
 
 # Ignore our exported zipfiles
 /*.zip
+
+# Ignore desktop app build output and dependencies
+/desktop/dist
+/desktop/node_modules

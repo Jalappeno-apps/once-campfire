@@ -108,15 +108,15 @@ class Room::MessagePusher
     end
 
     def push_subscriptions_for_targeted_call_users
-      relevant_subscriptions.where(user_id: message.mentionees.select(:id))
+      relevant_subscriptions
     end
 
     def mobile_devices_for_targeted_call_users
-      relevant_mobile_devices.where(user_id: message.mentionees.select(:id))
+      relevant_mobile_devices
     end
 
     def targeted_call_invite?(payload)
-      payload[:type] == "incoming_call" && message.mentionees.exists?
+      payload[:type] == "incoming_call"
     end
 
     def relevant_subscriptions

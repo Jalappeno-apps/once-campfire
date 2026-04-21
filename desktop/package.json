@@ -1,0 +1,45 @@
+{
+  "name": "campfire-desktop",
+  "version": "0.1.0",
+  "description": "Campfire desktop client",
+  "main": "main.js",
+  "author": "Daiwick",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.daiwick.campfire-desktop",
+    "productName": "Campfire",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "logo.png"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "logo.png",
+      "identity": null,
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "electron-store": "^8.0.0"
+  }
+}
