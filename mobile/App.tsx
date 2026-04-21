@@ -75,6 +75,19 @@ function normalizeDomain(rawDomain: string): string | null {
   }
 }
 
+function extractServerFromDeepLink(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "campfire:") return null;
+    if (parsed.hostname !== "connect") return null;
+    const server = parsed.searchParams.get("server");
+    return normalizeDomain(server ?? "");
+  } catch {
+    return null;
+  }
+}
+
 function isSettingsLikePath(url: string): boolean {
   if (!url) return false;
   try {
@@ -441,8 +454,16 @@ function AppContent() {
     (async () => {
       const storedDomain = await AsyncStorage.getItem(STORAGE_KEYS.domain);
 
+      const initialUrl = await Linking.getInitialURL();
+      const deepLinkedServer = extractServerFromDeepLink(initialUrl);
+
       if (!mounted) return;
-      if (storedDomain) {
+
+      if (deepLinkedServer) {
+        await AsyncStorage.setItem(STORAGE_KEYS.domain, deepLinkedServer);
+        setDomain(deepLinkedServer);
+        setDomainInput(deepLinkedServer);
+      } else if (storedDomain) {
         setDomain(storedDomain);
         setDomainInput(storedDomain);
       }
@@ -453,6 +474,21 @@ function AppContent() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      const server = extractServerFromDeepLink(url);
+      if (!server) return;
+      void AsyncStorage.setItem(STORAGE_KEYS.domain, server).then(() => {
+        setDomain(server);
+        setDomainInput(server);
+        setWebViewSourceUrl(server);
+        setWebViewError(null);
+        setShowSettings(false);
+      });
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {
