@@ -46,3 +46,6 @@ app/assets/builds/*
 # Ignore desktop app build output and dependencies
 /desktop/dist
 /desktop/node_modules
+
+# macOS metadata
+.DS_Store

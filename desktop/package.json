@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win",
+    "build:win": "electron-builder --win && rm -rf dist/win-arm64-unpacked dist/win-unpacked",
     "build:linux": "electron-builder --linux"
   },
   "build": {
@@ -20,7 +20,8 @@
       "main.js",
       "preload.js",
       "index.html",
-      "logo.png"
+      "logo.png",
+      "logo.ico"
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -29,7 +30,9 @@
       "target": ["dmg", "zip"]
     },
     "win": {
-      "target": ["nsis"]
+      "icon": "logo.ico",
+      "target": ["portable"],
+      "signingHashAlgorithms": null
     },
     "linux": {
       "target": ["AppImage", "deb"]

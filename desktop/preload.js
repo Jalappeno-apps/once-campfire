@@ -46,6 +46,13 @@ patchNotifications()
 // handles the actual notifications instead.
 window.__CAMPFIRE_NATIVE_APP__ = true
 
+// Keep the user always marked as online regardless of window focus/visibility.
+// presence_controller.js uses document.visibilityState to send 'absent' when
+// the page is hidden — in the desktop app we never want that.
+Object.defineProperty(document, "visibilityState", { get: () => "visible" })
+Object.defineProperty(document, "hidden", { get: () => false })
+document.addEventListener("visibilitychange", (e) => e.stopImmediatePropagation(), true)
+
 // Listen for unread room events dispatched by rooms_list_controller.js
 // and show a native notification for rooms the user isn't currently viewing.
 window.addEventListener("DOMContentLoaded", () => {
