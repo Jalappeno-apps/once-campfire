@@ -6,3 +6,5 @@ dist
 # Expo prebuild / EAS-generated native projects (managed workflow)
 ios
 android
+*.aab
+*.apk
