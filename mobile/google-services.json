@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:842917432872:android:f782c55de5dc196cf0af1d",
+        "android_client_info": {
+          "package_name": "com.daiwick.campfiremobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMKn0ojERg4pDdvZzqIPO9hQR5b3bDvhM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:842917432872:android:fdff8c16ccdacc31f0af1d",
         "android_client_info": {
           "package_name": "com.jalappeno.campfiremobile"

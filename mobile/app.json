@@ -11,7 +11,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jalappeno.campfiremobile",
+      "bundleIdentifier": "com.daiwick.campfiremobile",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoadsInWebContent": true,
@@ -21,7 +21,7 @@
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.jalappeno.campfiremobile",
+      "package": "com.daiwick.campfiremobile",
       "googleServicesFile": "./google-services.json",
       "usesCleartextTraffic": true,
       "permissions": [
