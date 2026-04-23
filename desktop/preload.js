@@ -75,43 +75,58 @@ window.addEventListener("DOMContentLoaded", () => {
     const roomName = labelEl ? labelEl.textContent.trim() : "New message"
     const href = roomEl.getAttribute("href") || null
 
-    console.log("[campfire:desktop] sending notification for room:", roomName, "href:", href)
+    console.log("[campfire:desktop] unread event for room:", roomName, "href:", href)
 
-    // Send immediately with fallback body, then upgrade with real message data
-    ipcRenderer.send("show-notification", { title: roomName, body: "New message", path: href })
-
-    // Fetch the last message from the room to get sender + body
+    // Fetch the last message to get sender + body, fall back to generic after 3s
     const roomIdMatch = targetId.match(/(\d+)/)
-    if (roomIdMatch && href) {
-      fetch(href, { headers: { "Accept": "text/html", "X-Requested-With": "XMLHttpRequest" }, credentials: "include" })
-        .then(r => r.text())
-        .then(html => {
-          const parser = new DOMParser()
-          const doc = parser.parseFromString(html, "text/html")
-          const messages = doc.querySelectorAll("div.message[data-message-id]")
-          const lastMsg = messages[messages.length - 1]
-          if (!lastMsg) return
+    const sendFallback = () => ipcRenderer.send("show-notification", { title: roomName, body: "New message", path: href })
 
-          const author = lastMsg.querySelector("[data-reply-target='author'], .message__author strong")?.textContent?.trim()
-          const isCallInvite = !!lastMsg.querySelector(".message__call-invite")
-          const text = lastMsg.querySelector(".trix-content")?.textContent?.replace(/\s+/g, " ").trim()
-
-          if (!author) return
-
-          let title = roomName
-          let body
-          if (isCallInvite) {
-            title = author
-            body = `📞 Started a call in ${roomName}`
-          } else {
-            body = text ? `${author}: ${text.slice(0, 100)}${text.length > 100 ? "…" : ""}` : author
-          }
-
-          console.log("[campfire:desktop] upgraded notification body:", body)
-          ipcRenderer.send("show-notification", { title, body, path: href })
-        })
-        .catch(err => console.log("[campfire:desktop] fetch failed:", err.message))
+    if (!roomIdMatch || !href) {
+      sendFallback()
+      return
     }
+
+    let notified = false
+    const fallbackTimer = setTimeout(() => {
+      if (!notified) { notified = true; sendFallback() }
+    }, 3000)
+
+    fetch(href, { headers: { "Accept": "text/html", "X-Requested-With": "XMLHttpRequest" }, credentials: "include" })
+      .then(r => r.text())
+      .then(html => {
+        clearTimeout(fallbackTimer)
+        if (notified) return
+        notified = true
+
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(html, "text/html")
+        const messages = doc.querySelectorAll("div.message[data-message-id]")
+        const lastMsg = messages[messages.length - 1]
+        if (!lastMsg) { sendFallback(); return }
+
+        const author = lastMsg.querySelector("[data-reply-target='author'], .message__author strong")?.textContent?.trim()
+        const isCallInvite = !!lastMsg.querySelector(".message__call-invite")
+        const text = lastMsg.querySelector(".trix-content")?.textContent?.replace(/\s+/g, " ").trim()
+
+        if (!author) { sendFallback(); return }
+
+        let title = roomName
+        let body
+        if (isCallInvite) {
+          title = author
+          body = `📞 Started a call in ${roomName}`
+        } else {
+          body = text ? `${author}: ${text.slice(0, 100)}${text.length > 100 ? "…" : ""}` : author
+        }
+
+        console.log("[campfire:desktop] sending notification:", title, "-", body)
+        ipcRenderer.send("show-notification", { title, body, path: href })
+      })
+      .catch(err => {
+        clearTimeout(fallbackTimer)
+        if (!notified) { notified = true; sendFallback() }
+        console.log("[campfire:desktop] fetch failed:", err.message)
+      })
   })
 })
 

@@ -148,10 +148,8 @@ function createWindow() {
   })
 
   mainWindow.on("close", (e) => {
-    if (process.platform === "darwin") {
-      e.preventDefault()
-      mainWindow.hide()
-    }
+    e.preventDefault()
+    mainWindow.hide()
   })
 }
 
@@ -171,6 +169,7 @@ function createTray() {
 
   tray.setContextMenu(menu)
   tray.on("click", () => { mainWindow?.show(); mainWindow?.focus() })
+  tray.on("double-click", () => { mainWindow?.show(); mainWindow?.focus() })
 }
 
 app.whenReady().then(() => {
@@ -216,7 +215,7 @@ app.whenReady().then(() => {
 })
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit()
+  // Don't quit — keep running in tray for background notifications
 })
 
 ipcMain.handle("get-domain", () => store.get("domain") ?? null)

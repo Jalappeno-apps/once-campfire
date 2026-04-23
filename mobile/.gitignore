@@ -8,3 +8,5 @@ ios
 android
 *.aab
 *.apk
+*.p8
+*.ipa

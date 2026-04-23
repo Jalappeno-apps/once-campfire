@@ -6,7 +6,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./logo.png",
+    "icon": "./logo-1024.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -17,7 +17,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoadsInWebContent": true,
           "NSAllowsLocalNetworking": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

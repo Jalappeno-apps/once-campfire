@@ -817,9 +817,7 @@ function AppContent() {
   }
 
   return (
-    /* Top inset: handled inside the WebView via CSS `env(safe-area-inset-*)`. Applying `edges={["top"]}`
-       here *and* env() in the page doubled top padding when the sidebar drawer opened. */
-    <SafeAreaView edges={["bottom"]} style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
       {shouldShowServerButton && (
         <TouchableOpacity
@@ -906,6 +904,7 @@ function AppContent() {
       >
         <WebView
           ref={webViewRef}
+          style={{ flex: 1, backgroundColor: "#0f1115" }}
           source={{ uri: webViewSourceUrl ?? domain }}
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
@@ -913,6 +912,7 @@ function AppContent() {
           onOpenWindow={handleOpenWindow}
           onShouldStartLoadWithRequest={handleShouldStartLoad}
           applicationNameForUserAgent="CampfireMobileApp/1"
+          hideKeyboardAccessoryView
           injectedJavaScriptBeforeContentLoaded={`
             window.__CAMPFIRE_NATIVE_APP__ = true;
             window.__CAMPFIRE_NATIVE_APP_PLATFORM__ = "react-native";
@@ -929,6 +929,12 @@ function AppContent() {
               }
             };
             (function() {
+              // Native SafeAreaView handles the top inset — remove viewport-fit=cover so
+              // env(safe-area-inset-top) returns 0 and the web app doesn't double-pad.
+              var meta = document.querySelector('meta[name="viewport"]');
+              if (meta) {
+                meta.setAttribute('content', meta.getAttribute('content').replace(/,?\\s*viewport-fit=cover/i, ''));
+              }
               function boot() {
                 var root = document.documentElement;
                 var raf = 0;
@@ -1362,6 +1368,6 @@ const styles = StyleSheet.create({
   },
   webviewWrap: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#000"
   }
 });

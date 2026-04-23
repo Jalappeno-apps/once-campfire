@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win && rm -rf dist/win-arm64-unpacked dist/win-unpacked",
+    "build:win": "electron-builder --win --x64 && rm -rf dist/win-x64-unpacked dist/win-arm64-unpacked dist/win-unpacked",
     "build:linux": "electron-builder --linux"
   },
   "build": {
