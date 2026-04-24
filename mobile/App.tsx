@@ -13,7 +13,6 @@ import {
   PermissionsAndroid,
   Vibration,
   useColorScheme,
-  KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +23,7 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
+import OnboardingScreen from "./OnboardingScreen";
 
 const APP_NAME = "Campfire";
 const APP_LOGO = require("./logo.png");
@@ -795,53 +795,13 @@ function AppContent() {
 
   if (!domain) {
     return (
-      <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={["top", "bottom"]} style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.background} />
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.onboardingScroll} keyboardShouldPersistTaps="handled">
-          <Image source={APP_LOGO} style={styles.onboardingLogo} />
-          <Text style={[styles.onboardingTitle, { color: colors.text }]}>Welcome to Campfire</Text>
-          <Text style={[styles.onboardingSubtitle, { color: colors.subtext }]}>
-            Real-time team chat with messaging, file sharing, and video calls — powered by your own server.
-          </Text>
-
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.onboardingStepTitle, { color: colors.text }]}>Getting started</Text>
-            <Text style={[styles.onboardingStep, { color: colors.subtext }]}>
-              1.{" "}Your team admin sets up a Campfire server and sends you an invite.
-            </Text>
-            <Text style={[styles.onboardingStep, { color: colors.subtext }]}>
-              2.{" "}Enter your server address below and sign in.
-            </Text>
-            <Text style={[styles.onboardingStep, { color: colors.subtext }]}>
-              3.{" "}Start chatting with your team instantly.
-            </Text>
-
-            <TouchableOpacity onPress={() => void Linking.openURL("https://once.com/campfire")}>
-              <Text style={[styles.onboardingLink, { color: colors.primary }]}>
-                Learn more at once.com/campfire →
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.onboardingStepTitle, { color: colors.text }]}>Connect your server</Text>
-            <Text style={[styles.helperText, { color: colors.subtext }]}>Enter the domain where your Campfire is hosted.</Text>
-            <TextInput
-              value={domainInput}
-              onChangeText={setDomainInput}
-              placeholder="chat.example.com"
-              placeholderTextColor={colors.subtext}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.text }]}
-            />
-            <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => void saveDomain()}>
-              <Text style={[styles.buttonLabel, { color: colors.primaryText }]}>Connect</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-        </KeyboardAvoidingView>
+        <OnboardingScreen
+          domainInput={domainInput}
+          onDomainInputChange={setDomainInput}
+          onConnect={() => void saveDomain()}
+        />
       </SafeAreaView>
     );
   }
@@ -917,7 +877,7 @@ function AppContent() {
             </TouchableOpacity>
           )}
           <Text style={[styles.helperText, { color: colors.subtext }]}>
-            Later, send this token to your backend/companion push service to deliver native push.
+            The Campfire server you connect to uses this device token to deliver notifications for new messages and calls.
           </Text>
         </ScrollView>
       )}
@@ -1399,45 +1359,5 @@ const styles = StyleSheet.create({
   webviewWrap: {
     flex: 1,
     backgroundColor: "#000"
-  },
-  onboardingScroll: {
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
-    alignItems: "center"
-  },
-  onboardingLogo: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
-    marginBottom: 20
-  },
-  onboardingTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 8
-  },
-  onboardingSubtitle: {
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 24,
-    paddingHorizontal: 8
-  },
-  onboardingStepTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 10
-  },
-  onboardingStep: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 6
-  },
-  onboardingLink: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 10
   }
 });
