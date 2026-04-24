@@ -37,5 +37,14 @@
     </div>
   <% end %>
 
+  <%= form_with url: room_messages_path(room), method: :post, scope: :message, class: "inline-flex", data: { turbo_frame: "_top" } do |f| %>
+    <%= f.hidden_field :body, value: "/meet" %>
+    <%= f.hidden_field :client_message_id, value: "" %>
+    <%= f.button type: "submit", class: "btn", title: "Start a call", style: "block-size: var(--btn-size); inline-size: var(--btn-size); min-inline-size: var(--btn-size);" do %>
+      <%= image_tag "camera.svg", size: 20, aria: { hidden: "true" } %>
+      <span class="for-screen-reader">Start a call</span>
+    <% end %>
+  <% end %>
+
   <%= render "rooms/involvements/bell", room: room %>
 <% end %>

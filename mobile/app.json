@@ -18,7 +18,10 @@
           "NSAllowsArbitraryLoadsInWebContent": true,
           "NSAllowsLocalNetworking": true
         },
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Campfire needs access to your camera for video calls and taking photos to share in chat.",
+        "NSMicrophoneUsageDescription": "Campfire needs access to your microphone for voice and video calls.",
+        "NSPhotoLibraryUsageDescription": "Campfire needs access to your photo library to share images in chat."
       }
     },
     "android": {
