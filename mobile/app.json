@@ -15,6 +15,7 @@
       "bundleIdentifier": "com.daiwick.campfiremobile",
       "infoPlist": {
         "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": true,
           "NSAllowsLocalNetworking": true
         },

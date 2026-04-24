@@ -37,14 +37,11 @@
     </div>
   <% end %>
 
-  <%= form_with url: room_messages_path(room), method: :post, scope: :message, class: "inline-flex", data: { turbo_frame: "_top" } do |f| %>
-    <%= f.hidden_field :body, value: "/meet" %>
-    <%= f.hidden_field :client_message_id, value: "" %>
-    <%= f.button type: "submit", class: "btn", title: "Start a call", style: "block-size: var(--btn-size); inline-size: var(--btn-size); min-inline-size: var(--btn-size);" do %>
-      <%= image_tag "camera.svg", size: 20, aria: { hidden: "true" } %>
-      <span class="for-screen-reader">Start a call</span>
-    <% end %>
-  <% end %>
+  <button type="button" class="btn" title="Start a call"
+      onclick="var t=document.querySelector('#composer trix-editor');if(t){t.editor.setSelectedRange([0,t.editor.getDocument().toString().length]);t.editor.deleteInDirection('forward');t.editor.insertHTML('/meet');document.querySelector('#composer').requestSubmit()}">
+    <img src="data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21.384 17.752a2.108 2.108 0 0 1-.65 1.64l-2.257 2.22a2.61 2.61 0 0 1-1.89.78c-.09 0-.18 0-.27-.01a24.6 24.6 0 0 1-10.71-4.37 24.17 24.17 0 0 1-5.08-5.08A24.42 24.42 0 0 1 .156 2.286a2.41 2.41 0 0 1 .75-2.15L3.126.136a2.08 2.08 0 0 1 1.66-.65 2.13 2.13 0 0 1 1.53.91l2.83 3.93a2.12 2.12 0 0 1-.36 2.79l-1.37 1.13a15.43 15.43 0 0 0 2.63 3.57 15.57 15.57 0 0 0 3.57 2.63l1.13-1.37a2.12 2.12 0 0 1 2.79-.36l3.93 2.83a2.12 2.12 0 0 1 .91 1.55v.59z'/%3E%3C/svg%3E" width="20" height="20" aria-hidden="true">
+    <span class="for-screen-reader">Start a call</span>
+  </button>
 
   <%= render "rooms/involvements/bell", room: room %>
 <% end %>
